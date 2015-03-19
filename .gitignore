@@ -7,3 +7,4 @@ Makefile.in
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
+.sh
