@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+aux_source_directory(. SRC_LIST)
+add_executable(geo2alberta2D geo2alberta2D.cpp)
+add_executable(geo2alberta3D geo2alberta3D.cpp)
+list(APPEND CMAKE_CXX_FLAGS "-std=c++11" ${CMAKE_CXX_FLAGS})
