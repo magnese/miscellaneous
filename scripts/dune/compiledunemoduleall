@@ -1,0 +1,16 @@
+#!/bin/sh
+
+#This script compile a dune modules with a certain given name passed by command line with all its dependencies
+#Author: Marco Agnese (m.agnese13@imperial.ac.uk)
+
+if [ $# -eq 0 ]
+then
+    echo "Description: compile a dune module with a certain given name passed by command line with all its dependencies"
+    echo "Usage: compiledunemoduleall modulename"
+    echo "Author: Marco Agnese (m.agnese13@imperial.ac.uk)"
+else
+    target=${1%/}
+    echo "START: compile"
+    $DUNE_DIR/dune-common$DUNE_SUFFIX/bin/dunecontrol --module=$target --opts=$DUNE_DIR/option.opts all
+    echo "END: compile"
+fi

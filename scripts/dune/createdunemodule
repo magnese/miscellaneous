@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#This script create a dune module with a certain given name passed by command line
+#Author: Marco Agnese (m.agnese13@imperial.ac.uk)
+
+if [ $# -eq 0 ]
+then
+    echo "Description: create a dune module with a certain given name passed by command line"
+    echo "Usage: createdunemodule modulename"
+    echo "Author: Marco Agnese (m.agnese13@imperial.ac.uk)"
+else
+    target=${1%/}
+    cd $MYDUNEMODULES_DIR
+    echo "START: create module $target"
+    $DUNE_DIR/dune-common$DUNE_SUFFIX/bin/duneproject
+    echo "END: create module $target"
+fi
+

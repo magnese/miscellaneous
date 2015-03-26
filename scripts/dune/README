@@ -1,0 +1,33 @@
+1) DUNE configuration:
+     in order to use DUNE 2.3.1  add the following lines to ~/.bashrc
+
+     DUNE_DIR=/usr/local_machine/dune-2.3.1; export DUNE_DIR
+     DUNE_SUFFIX=-2.3.1; export DUNE_SUFFIX
+     MYDUNEMODULES_DIR=$HOME/my_modules_path; export MYDUNEMODULES_DIR
+     source $DUNE_DIR/envar
+
+     where my_modules_path is the folder where the new module of dune will be created.
+
+2) Creation of a new DUNE module:
+     in order to create a new DUNE module run the following commands
+
+     createdunemodule module_name
+
+     and follow the instructions.
+
+3) Compilation of a DUNE module:
+     in order to compile a DUNE module run the following commands
+
+     compiledunemodule module_name
+
+4) Sumbit a job in cluster:
+     in order to compile and run a DUNE code in the cluster run the following commands
+
+     cd $MYDUNEMODULES_DIR/module_name/src
+     make clean
+     make all
+     qsubb module_name output_name [node_number](01 default)
+
+     the output will be saved in /scratchcompXX/user_name/output_name/ where XX is the node_number chosen.
+
+For further information please contact me at m.agnese13@imperial.ac.uk.
