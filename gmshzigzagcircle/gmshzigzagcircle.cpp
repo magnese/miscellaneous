@@ -30,27 +30,40 @@ void printLine(const std::size_t& idx,const std::size_t& idx1,const std::size_t&
 
 // create zig-zag circle geometry
 template<typename T>
-void createGeometry(const double& r,const double& R, const std::size_t& numPoints,T& ofs)
+void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
 {
   if(numPoints>1)
   {
-    // create points
-    std::vector<CoordinateType> innerPoints(numPoints,0.0);
+    // create outer points
     std::vector<CoordinateType> outerPoints(numPoints,0.0);
     const double angle(2.0*M_PI/static_cast<double>(numPoints));
-    const double angleOffset(angle/2.0);
-    for(std::size_t i=0;i!=numPoints;++i)
+    std::size_t pointIdx(1);
+    for(auto& point:outerPoints)
     {
-      outerPoints[i].idx=i+1;
-      outerPoints[i].x=R*cos(static_cast<double>(i)*angle);
-      outerPoints[i].y=R*sin(static_cast<double>(i)*angle);
-      innerPoints[i].idx=i+1+numPoints;
-      innerPoints[i].x=r*cos(static_cast<double>(i)*angle+angleOffset);
-      innerPoints[i].y=r*sin(static_cast<double>(i)*angle+angleOffset);
+      point.idx=pointIdx;
+      point.x=R*cos(static_cast<double>(pointIdx%numPoints)*angle);
+      point.y=R*sin(static_cast<double>(pointIdx%numPoints)*angle);
+      ++pointIdx;
+    }
+
+    // compute sizes of the triangles of the outer region
+    const double base(pow(pow(outerPoints[0].x-outerPoints[1].x,2)+pow(outerPoints[0].y-outerPoints[1].y,2),0.5));
+    const double height(pow(3.0,0.5)*base/2.0);
+
+    // create inner points
+    std::vector<CoordinateType> innerPoints(numPoints,0.0);
+    const double angleOffset(angle/2.0);
+    const double r(R-height);
+    for(auto& point:innerPoints)
+    {
+      point.idx=pointIdx;
+      point.x=r*cos(static_cast<double>(pointIdx%numPoints)*angle+angleOffset);
+      point.y=r*sin(static_cast<double>(pointIdx%numPoints)*angle+angleOffset);
+      ++pointIdx;
     }
 
     // dump characteristic lenght
-    ofs<<"cli = 0.1;"<<std::endl;
+    ofs<<"cli = "<<base<<";"<<std::endl;
 
     // dump points into the stream
     for(const auto& point:outerPoints)
@@ -107,26 +120,22 @@ int main(int argc,char** argv)
   // set parameters
   std::size_t numPoints(100);
   std::string filename("output.geo");
-  double r(0.95);
   double R(1.0);
   if(argc>1)
     numPoints=static_cast<std::size_t>(strtod(argv[1],NULL));
   if(argc>2)
     filename=argv[2];
   if(argc>3)
-    r=strtod(argv[3],NULL);
-  if(argc>4)
-    R=strtod(argv[4],NULL);
+    R=strtod(argv[3],NULL);
 
   // output parameters
   std::cout<<"Number of points: "<<numPoints<<std::endl;
   std::cout<<"File name : "<<filename<<std::endl;
-  std::cout<<"Inner radious: "<<r<<std::endl;
   std::cout<<"Outer radious: "<<R<<std::endl;
 
   // create geoemtry and dump it
   std::ofstream ofs(filename);
-  createGeometry(r,R,numPoints,ofs);
+  createGeometry(R,numPoints,ofs);
   ofs.close();
   return 0;
 }
