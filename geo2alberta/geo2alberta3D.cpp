@@ -42,16 +42,21 @@ int main(int argc,char** argv)
 {
   // input information
   std::string inputFileName;
-  if (argc!=2)
+  if(argc>1)
   {
-    std::cout<<"Geometry file name : ";
-    std::cin>>inputFileName;
+    inputFileName=argv[1];
+    std::cout<<"Mehs file name : "<<inputFileName<<std::endl;
   }
   else
-    inputFileName=argv[1];
-
+  {
+    std::cout<<"Mehs file name : ";
+    std::cin>>inputFileName;
+  }
   constexpr unsigned int worldDim(3);
+  std::cout<<"World dimension : "<<worldDim<<std::endl;
   constexpr unsigned int gridDim(3);
+  std::cout<<"Grid dimension : "<<gridDim<<std::endl;
+  std::cout<<std::endl;
 
   // create mesh
   GmshInitialize(argc, argv);
