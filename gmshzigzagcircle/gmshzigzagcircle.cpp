@@ -4,11 +4,11 @@
 #include <vector>
 #include <cmath>
 
-// coordinate type
-struct CoordinateType
+// point type
+struct PointType
 {
-  CoordinateType(const double value):
-    x(value),y(value),z(value),idx(1)
+  PointType():
+    x(0.0),y(0.0),z(0.0),idx(1)
   {}
   double x;
   double y;
@@ -16,26 +16,35 @@ struct CoordinateType
   std::size_t idx;
 };
 
-std::ostream& operator<<(std::ostream& os, const CoordinateType& coord)
+std::ostream& operator<<(std::ostream& os, const PointType& point)
 {
-  os<<"Point("<<coord.idx<<") = {"<<coord.x<<", "<<coord.y<<", "<<coord.z<<", cli};";
+  os<<"Point("<<point.idx<<") = {"<<point.x<<", "<<point.y<<", "<<point.z<<", cli};";
 }
 
-// print line
-template<typename T>
-void printLine(const std::size_t& idx,const std::size_t& idx1,const std::size_t& idx2,T& ofs)
+// line type
+struct LineType
 {
-   ofs<<"Line("<<idx<<") = {"<<idx1<<" ,"<<idx2<<"};"<<std::endl;
+  LineType():
+    idxPoint1(1),idxPoint2(2),idx(1)
+  {}
+  std::size_t idxPoint1;
+  std::size_t idxPoint2;
+  std::size_t idx;
+};
+
+std::ostream& operator<<(std::ostream& os, const LineType& line)
+{
+  os<<"Line("<<line.idx<<") = {"<<line.idxPoint1<<" ,"<<line.idxPoint2<<"};";
 }
 
-// create zig-zag circle geometry
+// create geometry
 template<typename T>
 void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
 {
   if(numPoints>1)
   {
     // create outer points
-    std::vector<CoordinateType> outerPoints(numPoints,0.0);
+    std::vector<PointType> outerPoints(numPoints);
     const double angle(2.0*M_PI/static_cast<double>(numPoints));
     std::size_t pointIdx(1);
     for(auto& point:outerPoints)
@@ -46,12 +55,23 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
       ++pointIdx;
     }
 
+    // create outer lines
+    std::vector<LineType> outerLines(numPoints);
+    std::size_t lineIdx(1);
+    for(auto& line:outerLines)
+    {
+      line.idxPoint1=lineIdx;
+      line.idxPoint2=lineIdx%numPoints+1;
+      line.idx=lineIdx;
+      ++lineIdx;
+    }
+
     // compute sizes of the triangles of the outer region
     const double base(pow(pow(outerPoints[0].x-outerPoints[1].x,2)+pow(outerPoints[0].y-outerPoints[1].y,2),0.5));
     const double height(pow(3.0,0.5)*base/2.0);
 
     // create inner points
-    std::vector<CoordinateType> innerPoints(numPoints,0.0);
+    std::vector<PointType> innerPoints(numPoints);
     const double angleOffset(angle/2.0);
     const double r(R-height);
     for(auto& point:innerPoints)
@@ -62,29 +82,52 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
       ++pointIdx;
     }
 
+    // create inner lines
+    std::vector<LineType> innerLines(numPoints);
+    for(auto& line:innerLines)
+    {
+      line.idxPoint1=lineIdx;
+      line.idxPoint2=lineIdx%numPoints+1+numPoints;
+      line.idx=lineIdx;
+      ++lineIdx;
+    }
+
+    // create zig-zag lines
+    std::vector<LineType> zigLines(numPoints);
+    for(auto& line:zigLines)
+    {
+      line.idxPoint1=lineIdx-2*numPoints;
+      line.idxPoint2=lineIdx-numPoints;
+      line.idx=lineIdx;
+      ++lineIdx;
+    }
+    std::vector<LineType> zagLines(numPoints);
+    for(auto& line:zagLines)
+    {
+      line.idxPoint1=lineIdx-2*numPoints;
+      line.idxPoint2=lineIdx%numPoints+1;
+      line.idx=lineIdx;
+      ++lineIdx;
+    }
+
     // dump characteristic lenght
     ofs<<"cli = "<<base<<";"<<std::endl;
 
-    // dump points into the stream
+    // dump points
     for(const auto& point:outerPoints)
       ofs<<point<<std::endl;
     for(const auto& point:innerPoints)
       ofs<<point<<std::endl;
 
-    // dump circles lines
-    std::size_t lineIdx(1);
-    for(std::size_t i=1;i!=numPoints+1;++i,++lineIdx)
-      printLine(lineIdx,i,i%numPoints+1,ofs);
-    for(std::size_t i=1;i!=numPoints+1;++i,++lineIdx)
-      printLine(lineIdx,i+numPoints,i%numPoints+1+numPoints,ofs);
-
-    // dump zig-zag lines
-    for(std::size_t i=1;i!=numPoints+1;++i,++lineIdx)
-    {
-      printLine(lineIdx,i,i+numPoints,ofs);
-      ++lineIdx;
-      printLine(lineIdx,i+numPoints,i%numPoints+1,ofs);
-    }
+    // dump lines
+    for(const auto& line:outerLines)
+      ofs<<line<<std::endl;
+    for(const auto& line:innerLines)
+      ofs<<line<<std::endl;
+    for(const auto& line:zigLines)
+      ofs<<line<<std::endl;
+    for(const auto& line:zagLines)
+      ofs<<line<<std::endl;
 
     // create inner surface
     std::size_t loopIdx(1);
@@ -94,7 +137,7 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
     ofs<<2*numPoints<<"};"<<std::endl;
     ofs<<"Plane Surface("<<loopIdx<<") = {"<<loopIdx<<"};"<<std::endl;
     ofs<<"Physical Surface(1) = {"<<loopIdx<<"};"<<std::endl;
-
+/*
     // create outer surface
     ++loopIdx;
     for(std::size_t i=0;i!=numPoints;++i,++loopIdx)
@@ -109,6 +152,7 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
     for(std::size_t i=0;i!=(2*numPoints-1);++i)
       ofs<<i+2<<", ";
     ofs<<2*numPoints+1<<"};"<<std::endl;
+*/
   }
   else
     std::cout<<"ERROR: you need to put at least 2 points!"<<std::endl;
