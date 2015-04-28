@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, const LineType& line)
 
 // create geometry
 template<typename T>
-void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
+void createGeometry(const double& R, const std::size_t& numPoints,T& ofs,const double& alpha)
 {
   if(numPoints>1)
   {
@@ -73,7 +73,7 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
     // create inner points
     std::vector<PointType> innerPoints(numPoints);
     const double angleOffset(angle/2.0);
-    const double r(R-height);
+    const double r(R-height*alpha);
     for(auto& point:innerPoints)
     {
       point.idx=pointIdx;
@@ -173,21 +173,25 @@ int main(int argc,char** argv)
   std::size_t numPoints(100);
   std::string filename("output.geo");
   double R(1.0);
+  double alpha(1.0);
   if(argc>1)
     numPoints=static_cast<std::size_t>(strtod(argv[1],NULL));
   if(argc>2)
     filename=argv[2];
   if(argc>3)
     R=strtod(argv[3],NULL);
+  if(argc>4)
+    alpha=strtod(argv[4],NULL);
 
   // output parameters
   std::cout<<"Number of points: "<<numPoints<<std::endl;
   std::cout<<"File name : "<<filename<<std::endl;
   std::cout<<"Outer radious: "<<R<<std::endl;
+  std::cout<<"Dilatation factor for annulus width: "<<alpha<<std::endl;
 
   // create geoemtry and dump it
   std::ofstream ofs(filename);
-  createGeometry(R,numPoints,ofs);
+  createGeometry(R,numPoints,ofs,alpha);
   ofs.close();
   return 0;
 }
