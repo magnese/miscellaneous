@@ -129,30 +129,38 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs)
     for(const auto& line:zagLines)
       ofs<<line<<std::endl;
 
-    // create inner surface
+    // dump inner surface
     std::size_t loopIdx(1);
     ofs<<"Line Loop("<<loopIdx<<") = {";
-    for(std::size_t i=numPoints+1;i!=2*numPoints;++i)
-      ofs<<i<<", ";
-    ofs<<2*numPoints<<"};"<<std::endl;
+    bool isFirst(true);
+    for(auto& line:innerLines)
+      if(isFirst)
+      {
+        ofs<<line.idx;
+        isFirst=false;
+      }
+      else
+        ofs<<", "<<line.idx;
+    ofs<<"};"<<std::endl;
     ofs<<"Plane Surface("<<loopIdx<<") = {"<<loopIdx<<"};"<<std::endl;
     ofs<<"Physical Surface(1) = {"<<loopIdx<<"};"<<std::endl;
-/*
-    // create outer surface
     ++loopIdx;
-    for(std::size_t i=0;i!=numPoints;++i,++loopIdx)
+
+    // dump outer surface
+    for(std::size_t i=0;i!=numPoints;++i)
     {
-      ofs<<"Line Loop("<<loopIdx<<") = {"<<i+1<<", -"<<2*numPoints+i*2+1<<", -"<<2*numPoints+i*2+2<<"};"<<std::endl;
+      ofs<<"Line Loop("<<loopIdx<<") = {"<<innerLines[i].idx<<", -"<<zigLines[(i+1)%numPoints].idx<<", -"<<zagLines[i].idx<<"};"<<std::endl;
       ofs<<"Plane Surface("<<loopIdx<<") = {"<<loopIdx<<"};"<<std::endl;
       ++loopIdx;
-      ofs<<"Line Loop("<<loopIdx<<") = {"<<numPoints+i+1<<", -"<<2*numPoints+i*2+2<<", -"<<2*numPoints+(i*2+2)%(2*numPoints)+1<<"};"<<std::endl;
+      ofs<<"Line Loop("<<loopIdx<<") = {"<<outerLines[i].idx<<", -"<<zigLines[i].idx<<", -"<<zagLines[i].idx<<"};"<<std::endl;
       ofs<<"Plane Surface("<<loopIdx<<") = {"<<loopIdx<<"};"<<std::endl;
+      ++loopIdx;
     }
     ofs<<"Physical Surface(2) = {";
-    for(std::size_t i=0;i!=(2*numPoints-1);++i)
-      ofs<<i+2<<", ";
-    ofs<<2*numPoints+1<<"};"<<std::endl;
-*/
+    for(std::size_t i=2;i!=loopIdx;++i)
+      ofs<<i<<", ";
+    ofs<<loopIdx<<"};"<<std::endl;
+
   }
   else
     std::cout<<"ERROR: you need to put at least 2 points!"<<std::endl;
