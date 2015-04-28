@@ -9,18 +9,42 @@
 
 enum FlagType{garbageFlag,numVerticesFlag,verticesFlag,numElementsFlag,elementsFlag};
 
-int main(void)
+int main(int argc,char** argv)
 {
   // input information
   std::string inputFileName;
-  std::cout<<"Mehs file name : ";
-  std::cin>>inputFileName;
+  if(argc>1)
+  {
+    inputFileName=argv[1];
+    std::cout<<"Mehs file name : "<<inputFileName<<std::endl;
+  }
+  else
+  {
+    std::cout<<"Mehs file name : ";
+    std::cin>>inputFileName;
+  }
   unsigned int worldDim;
-  std::cout<<"World dimension : ";
-  std::cin>>worldDim;
+  if(argc>2)
+  {
+    worldDim=static_cast<unsigned int>(strtod(argv[2],NULL));
+    std::cout<<"World dimension : "<<worldDim<<std::endl;
+  }
+  else
+  {
+    std::cout<<"World dimension : ";
+    std::cin>>worldDim;
+  }
   unsigned int gridDim;
-  std::cout<<"Grid dimension : ";
-  std::cin>>gridDim;
+  if(argc>3)
+  {
+    gridDim=static_cast<unsigned int>(strtod(argv[3],NULL));
+    std::cout<<"Grid dimension : "<<gridDim<<std::endl;
+  }
+  else
+  {
+    std::cout<<"Grid dimension : ";
+    std::cin>>gridDim;
+  }
   std::cout<<std::endl;
 
   // read file
