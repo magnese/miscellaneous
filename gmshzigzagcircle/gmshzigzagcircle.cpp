@@ -149,7 +149,7 @@ void createGeometry(const double& R, const std::size_t& numPoints,T& ofs,const d
     // dump outer surface
     for(std::size_t i=0;i!=numPoints;++i)
     {
-      ofs<<"Line Loop("<<loopIdx<<") = {"<<innerLines[i].idx<<", -"<<zigLines[(i+1)%numPoints].idx<<", -"<<zagLines[i].idx<<"};"<<std::endl;
+      ofs<<"Line Loop("<<loopIdx<<") = {-"<<zagLines[i].idx<<", -"<<zigLines[(i+1)%numPoints].idx<<", "<<innerLines[i].idx<<"};"<<std::endl;
       ofs<<"Plane Surface("<<loopIdx<<") = {"<<loopIdx<<"};"<<std::endl;
       ++loopIdx;
       ofs<<"Line Loop("<<loopIdx<<") = {"<<outerLines[i].idx<<", -"<<zigLines[i].idx<<", -"<<zagLines[i].idx<<"};"<<std::endl;
