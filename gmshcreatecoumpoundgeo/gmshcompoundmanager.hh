@@ -72,7 +72,8 @@ class GMSHCompoundManager
     addGModelToCompound(*domain(),domainEdges);
 
     // add interface to compound gmodel
-    addMeshToCompound();
+    std::vector<GEdge*> interfaceEdges(0);
+    addMeshToCompound(*interface(),interfaceEdges);
 
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
@@ -124,8 +125,29 @@ class GMSHCompoundManager
     }
   }
 
-  void addMeshToCompound()
-  {}
+  void addMeshToCompound(GModel& model,std::vector<GEdge*>& edges)
+  {
+    model.indexMeshVertices(true,0,true); // index all the mesh vertices in a continuous sequence starting at 1
+    unsigned int vtxInsertionCounter(0);
+    std::vector<GVertex*> vtxInsertedPtr(0);
+    std::vector<unsigned int> vtxInsertionMap(model.getMaxVertexNumber()+1,0);
+    constexpr double charlenght(1000);
+
+    // add all vertices
+    for(unsigned int i=1;i!=vtxInsertionMap.size();++i)
+    {
+      MVertex* vtxPtr(model.getMeshVertexByTag(i));
+      if(vtxPtr!=nullptr)
+      {
+        if(vtxPtr->getIndex()>(-1))
+        {
+          vtxInsertedPtr.push_back(compound()->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          vtxInsertionMap[i]=vtxInsertionCounter;
+          ++vtxInsertionCounter;
+        }
+      }
+    }
+  }
 };
 
 #endif //GMSHCOMPOUNDMANAGER_HH

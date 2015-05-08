@@ -1,11 +1,7 @@
 #include <iostream>
 #include <string>
-#include <vector>
-#include <map>
 
 #include "Gmsh.h"
-#include "GModel.h"
-#include "MTetrahedron.h"
 
 #include "gmshcompoundmanager.hh"
 
