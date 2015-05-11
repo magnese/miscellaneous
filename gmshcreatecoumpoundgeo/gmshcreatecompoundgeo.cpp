@@ -42,12 +42,14 @@ int main(int argc,char** argv)
     }
   }
 
-  // create gmodels
+  // create gmodels and dump compund geo file
   GMSHCompoundManager compoundManager(domainFileName,interfaceFileName,holeFileName);
+  compoundManager.createCompoundGeo();
+  compoundManager.writeCompoundGeo();
 
-  // dump compound geo file
-  std::string compoundFileName("compound.geo");
-  compoundManager.compound()->writeGEO(compoundFileName,true,false);
+  // create compund mesh and dump it
+  compoundManager.createCompoundMsh();
+  compoundManager.writeCompoundMsh();
 
   // finalize gmsh and return
   GmshFinalize();

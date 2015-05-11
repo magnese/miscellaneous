@@ -3,6 +3,7 @@
 
 #include <string>
 #include <array>
+#include <vector>
 
 #include "GModel.h"
 #include "MLine.h"
@@ -29,8 +30,6 @@ class GMSHCompoundManager
       hole()->readGEO(holeFileName);
       hashole_=true;
     }
-    // create compound
-    createCompound();
   }
 
   ~GMSHCompoundManager()
@@ -61,10 +60,10 @@ class GMSHCompoundManager
     return hashole_;
   }
 
-  void createCompound()
+  void createCompoundGeo()
   {
     if(compound()!=nullptr)
-      delete gmodelptrs_[3];
+      freeCompound();
     compound()=new GModel();
     compound()->setFactory("Gmsh");
 
@@ -82,8 +81,34 @@ class GMSHCompoundManager
       addGModelToCompound(*hole(),holeEdges);
 
     // add line loops and faces to compound gmodel
-    std::vector<std::vector<GEdge*> > lineLoop(1,domainEdges);
-    compound()->addPlanarFace(lineLoop);
+    std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
+    (compound()->addPlanarFace(outerLineLoop))->addPhysicalEntity(2);
+    std::vector<std::vector<GEdge*>> innerLineLoop({interfaceEdges});
+    if(hashole_)
+      innerLineLoop.push_back(holeEdges);
+    (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
+  }
+
+  inline void createCompoundMsh()
+  {
+    if(compound()==nullptr)
+      createCompoundGeo();
+    compound()->mesh(2);
+  }
+
+  inline void writeCompoundGeo(const std::string& fileName="compound.geo")
+  {
+    compound()->writeGEO(fileName,true,false);
+  }
+
+  inline void writeCompoundMsh(const std::string& fileName="compound.msh")
+  {
+    compound()->writeMSH(fileName,2.2,false,false);
+  }
+
+  inline void freeCompound()
+  {
+    delete compound();
   }
 
   private:
