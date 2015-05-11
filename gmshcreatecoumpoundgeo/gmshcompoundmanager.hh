@@ -5,15 +5,26 @@
 #include <array>
 #include <vector>
 
+#include "Gmsh.h"
 #include "GModel.h"
 #include "MLine.h"
+
+// mesh algorithms type
+enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
 class GMSHCompoundManager
 {
   public:
-  GMSHCompoundManager(const std::string& domainFileName,const std::string& interfaceFileName,const std::string& holeFileName):
+  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
+                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
     gmodelptrs_(),hashole_(false)
   {
+    // init gmsh
+    GmshInitialize(argc,argv);
+    GmshSetOption("General","Terminal",1.);
+    if(verbosity)
+      GmshSetOption("General","Verbosity",99.);
+    GmshSetOption("Mesh","Algorithm",static_cast<double>(algorithm));
     // load domain
     domain()=new GModel();
     domain()->setFactory("Gmsh");
@@ -37,6 +48,8 @@ class GMSHCompoundManager
   {
     for(auto& model:gmodelptrs_)
       delete model;
+    // finalize gmsh
+    GmshFinalize();
   }
 
   inline GModel*& domain()

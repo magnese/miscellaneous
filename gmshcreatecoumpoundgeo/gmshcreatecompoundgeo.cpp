@@ -1,24 +1,10 @@
 #include <iostream>
 #include <string>
 
-#include "Gmsh.h"
-
 #include "gmshcompoundmanager.hh"
-
-#define DEBUG_STATUS 1
-
-enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
 int main(int argc,char** argv)
 {
-  // init gmsh
-  GmshInitialize(argc, argv);
-  GmshSetOption("General","Terminal",1.);
-  #if DEBUG_STATUS
-  GmshSetOption("General","Verbosity",99.);
-  #endif
-  GmshSetOption("Mesh","Algorithm",static_cast<double>(automatic));
-
   // get geometries file names
   std::string domainFileName;
   std::string interfaceFileName;
@@ -43,7 +29,7 @@ int main(int argc,char** argv)
   }
 
   // create gmodels and dump compund geo file
-  GMSHCompoundManager compoundManager(domainFileName,interfaceFileName,holeFileName);
+  GMSHCompoundManager compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName);
   compoundManager.createCompoundGeo();
   compoundManager.writeCompoundGeo();
 
@@ -51,7 +37,5 @@ int main(int argc,char** argv)
   compoundManager.createCompoundMsh();
   compoundManager.writeCompoundMsh();
 
-  // finalize gmsh and return
-  GmshFinalize();
   return 0;
 }
