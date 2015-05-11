@@ -5,6 +5,7 @@
 #include <array>
 
 #include "GModel.h"
+#include "MLine.h"
 
 class GMSHCompoundManager
 {
@@ -91,34 +92,32 @@ class GMSHCompoundManager
 
   void addGModelToCompound(GModel& model,std::vector<GEdge*>& edges)
   {
-    unsigned int vtxInsertionCounter(0);
-    std::vector<GVertex*> vtxInsertedPtr(0);
-    std::vector<GVertex*> vtxPtr(2,nullptr);
-    std::vector<int> vtxInsertionMap(model.getNumVertices()+1,-1);
+    unsigned int vtxCounter(0);
+    std::vector<GVertex*> vertices(0);
+    std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
+    std::vector<int> verticesMap(model.getNumVertices()+1,-1);
     for(typename GModel::eiter it=model.firstEdge();it!=model.lastEdge();++it)
     {
       // get edge physical ID
       unsigned int physicalID(((*it)->getPhysicalEntities())[0]);
       // add first vertex
       vtxPtr[0]=(*it)->getBeginVertex();
-      if(vtxInsertionMap[vtxPtr[0]->tag()]==-1)
+      if(verticesMap[vtxPtr[0]->tag()]==-1)
       {
-        vtxInsertedPtr.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),
-                                                        vtxPtr[0]->prescribedMeshSizeAtVertex()));
-        vtxInsertionMap[vtxPtr[0]->tag()]=vtxInsertionCounter;
-        ++vtxInsertionCounter;
+        vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
+        verticesMap[vtxPtr[0]->tag()]=vtxCounter;
+        ++vtxCounter;
       }
-      vtxPtr[0]=vtxInsertedPtr[vtxInsertionMap[vtxPtr[0]->tag()]];
+      vtxPtr[0]=vertices[verticesMap[vtxPtr[0]->tag()]];
       // add last vertex
       vtxPtr[1]=(*it)->getEndVertex();
-      if(vtxInsertionMap[vtxPtr[1]->tag()]==-1)
+      if(verticesMap[vtxPtr[1]->tag()]==-1)
       {
-        vtxInsertedPtr.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),
-                                 vtxPtr[1]->prescribedMeshSizeAtVertex()));
-        vtxInsertionMap[vtxPtr[1]->tag()]=vtxInsertionCounter;
-        ++vtxInsertionCounter;
+        vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
+        verticesMap[vtxPtr[1]->tag()]=vtxCounter;
+        ++vtxCounter;
       }
-      vtxPtr[1]=vtxInsertedPtr[vtxInsertionMap[vtxPtr[1]->tag()]];
+      vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
       // add edge
       edges.push_back(compound()->addLine(vtxPtr[0],vtxPtr[1]));
       (*edges.rbegin())->addPhysicalEntity(physicalID);
@@ -127,24 +126,40 @@ class GMSHCompoundManager
 
   void addMeshToCompound(GModel& model,std::vector<GEdge*>& edges)
   {
-    model.indexMeshVertices(true,0,true); // index all the mesh vertices in a continuous sequence starting at 1
-    unsigned int vtxInsertionCounter(0);
-    std::vector<GVertex*> vtxInsertedPtr(0);
-    std::vector<unsigned int> vtxInsertionMap(model.getMaxVertexNumber()+1,0);
+    // index all the mesh vertices in a continuous sequence starting at 1
+    model.indexMeshVertices(true,0,true);
+    unsigned int vtxCounter(0);
+    std::vector<GVertex*> vertices(0);
+    std::vector<unsigned int> verticesMap(model.getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
 
-    // add all vertices
-    for(unsigned int i=1;i!=vtxInsertionMap.size();++i)
+    // add vertices
+    for(unsigned int i=1;i!=verticesMap.size();++i)
     {
       MVertex* vtxPtr(model.getMeshVertexByTag(i));
       if(vtxPtr!=nullptr)
       {
         if(vtxPtr->getIndex()>(-1))
         {
-          vtxInsertedPtr.push_back(compound()->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
-          vtxInsertionMap[i]=vtxInsertionCounter;
-          ++vtxInsertionCounter;
+          vertices.push_back(compound()->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          verticesMap[i]=vtxCounter;
+          ++vtxCounter;
         }
+      }
+    }
+
+    // add edges
+    std::array<unsigned int,2> posVtx({0,0});
+    constexpr unsigned int physicalID(1);
+    for(typename GModel::eiter edgeIt=model.firstEdge();edgeIt!=model.lastEdge();++edgeIt)
+    {
+      for(unsigned int i=0;i!=(*edgeIt)->lines.size();++i)
+      {
+        MLine* linePtr((*edgeIt)->lines[i]);
+        posVtx[0]=verticesMap[linePtr->getVertex(0)->getNum()];
+        posVtx[1]=verticesMap[linePtr->getVertex(1)->getNum()];
+        edges.push_back(compound()->addLine(vertices[posVtx[0]],vertices[posVtx[1]]));
+        (*edges.rbegin())->addPhysicalEntity(physicalID);
       }
     }
   }
