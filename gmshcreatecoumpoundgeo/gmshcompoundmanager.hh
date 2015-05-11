@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <list>
 
 #include "Gmsh.h"
 #include "GModel.h"
@@ -272,8 +273,52 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
   private:
   void addGModelToCompound(GModel*& model)
   {
-    //TODO
+    std::vector<GVertex*> vertices(0);
+    std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
+    std::vector<int> verticesMap(model->getNumVertices()+1,-1);
+    unsigned int vtxCounter(0);
+
+    std::vector<GEdge*> edges(0);
+    for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
+    {
+      unsigned int physicalID(((*faceIt)->getPhysicalEntities())[0]);
+      std::list<GEdge*> edgesList((*faceIt)->edges());
+      edges.resize(edgesList.size());
+      unsigned int edgeCounter(0);
+      std::list<int>::iterator edgeOrientationIter((*faceIt)->edgeOrientations().begin());
+
+      for(auto& edge:edgesList)
+      {
+        vtxPtr[0]=edge->getBeginVertex();
+        if(verticesMap[vtxPtr[0]->tag()]==-1)
+        {
+          vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
+          verticesMap[vtxPtr[0]->tag()]=vtxCounter;
+          ++vtxCounter;
+        }
+        vtxPtr[0]=vertices[verticesMap[vtxPtr[0]->tag()]];
+
+        vtxPtr[1]=edge->getEndVertex();
+        if(verticesMap[vtxPtr[1]->tag()]==-1)
+        {
+          vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
+          verticesMap[vtxPtr[1]->tag()]=vtxCounter;
+          ++vtxCounter;
+        }
+        vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
+
+        if(*edgeOrientationIter<0)
+          std::swap(vtxPtr[0],vtxPtr[1]);
+        ++edgeOrientationIter;
+
+        edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
+        ++edgeCounter;
+      }
+      std::vector<std::vector<GEdge*>> lineLoop(1,edges);
+      (compound()->addPlanarFace(lineLoop))->addPhysicalEntity(physicalID);
+    }
   }
+
   void convertMesh2GModel(GModel*& model)
   {
     //TODO
