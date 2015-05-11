@@ -22,6 +22,7 @@ class GMSHCompoundManager
     interface()=new GModel();
     interface()->setFactory("Gmsh");
     interface()->readMSH(interfaceFileName);
+    convertMesh2GModel(interface());
     // load hole (if present)
     hole()=new GModel();
     hole()->setFactory("Gmsh");
@@ -69,16 +70,16 @@ class GMSHCompoundManager
 
     // add domain to compound gmodel
     std::vector<GEdge*> domainEdges(0);
-    addGModelToCompound(*domain(),domainEdges);
+    addGModelToCompound(domain(),domainEdges);
 
     // add interface to compound gmodel
     std::vector<GEdge*> interfaceEdges(0);
-    addMeshToCompound(*interface(),interfaceEdges);
+    addGModelToCompound(interface(),interfaceEdges);
 
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
     if(hashole_)
-      addGModelToCompound(*hole(),holeEdges);
+      addGModelToCompound(hole(),holeEdges);
 
     // add line loops and faces to compound gmodel
     std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
@@ -115,13 +116,13 @@ class GMSHCompoundManager
   std::array<GModel*,4> gmodelptrs_;
   bool hashole_;
 
-  void addGModelToCompound(GModel& model,std::vector<GEdge*>& edges)
+  void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges)
   {
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
-    std::vector<int> verticesMap(model.getNumVertices()+1,-1);
-    for(typename GModel::eiter it=model.firstEdge();it!=model.lastEdge();++it)
+    std::vector<int> verticesMap(model->getNumVertices()+1,-1);
+    for(typename GModel::eiter it=model->firstEdge();it!=model->lastEdge();++it)
     {
       // get edge physical ID
       unsigned int physicalID(((*it)->getPhysicalEntities())[0]);
@@ -149,24 +150,28 @@ class GMSHCompoundManager
     }
   }
 
-  void addMeshToCompound(GModel& model,std::vector<GEdge*>& edges)
+  void convertMesh2GModel(GModel*& model)
   {
+    // create new gmodel
+    GModel* newGModel(new GModel());
+    newGModel->setFactory("Gmsh");
+
     // index all the mesh vertices in a continuous sequence starting at 1
-    model.indexMeshVertices(true,0,true);
+    model->indexMeshVertices(true,0,true);
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::vector<unsigned int> verticesMap(model.getMaxVertexNumber()+1,0);
+    std::vector<unsigned int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
 
     // add vertices
     for(unsigned int i=1;i!=verticesMap.size();++i)
     {
-      MVertex* vtxPtr(model.getMeshVertexByTag(i));
+      MVertex* vtxPtr(model->getMeshVertexByTag(i));
       if(vtxPtr!=nullptr)
       {
         if(vtxPtr->getIndex()>(-1))
         {
-          vertices.push_back(compound()->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
           verticesMap[i]=vtxCounter;
           ++vtxCounter;
         }
@@ -176,17 +181,22 @@ class GMSHCompoundManager
     // add edges
     std::array<unsigned int,2> posVtx({0,0});
     constexpr unsigned int physicalID(1);
-    for(typename GModel::eiter edgeIt=model.firstEdge();edgeIt!=model.lastEdge();++edgeIt)
+    std::vector<GEdge*> edges(0);
+    for(typename GModel::eiter edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
       for(unsigned int i=0;i!=(*edgeIt)->lines.size();++i)
       {
         MLine* linePtr((*edgeIt)->lines[i]);
         posVtx[0]=verticesMap[linePtr->getVertex(0)->getNum()];
         posVtx[1]=verticesMap[linePtr->getVertex(1)->getNum()];
-        edges.push_back(compound()->addLine(vertices[posVtx[0]],vertices[posVtx[1]]));
+        edges.push_back(newGModel->addLine(vertices[posVtx[0]],vertices[posVtx[1]]));
         (*edges.rbegin())->addPhysicalEntity(physicalID);
       }
     }
+
+    // free old mesh model and assign new gmodel
+    delete model;
+    model=newGModel;
   }
 };
 
