@@ -29,7 +29,8 @@ int main(int argc,char** argv)
   }
 
   // create gmodels and dump compund geo file
-  GMSHCompoundManager compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName);
+  constexpr int worlddim(2);
+  GMSHCompoundManager<worlddim> compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName);
   compoundManager.createCompoundGeo();
   compoundManager.writeCompoundGeo();
 

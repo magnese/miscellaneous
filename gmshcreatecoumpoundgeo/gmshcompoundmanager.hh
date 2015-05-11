@@ -12,11 +12,12 @@
 // mesh algorithms type
 enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
-class GMSHCompoundManager
+// base class
+class GMSHCompoundManagerBase
 {
   public:
-  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
+  GMSHCompoundManagerBase(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
+                          const std::string& holeFileName,const GmshAlgorithmType& algorithm,const bool& verbosity):
     gmodelptrs_(),hashole_(false)
   {
     // init gmsh
@@ -33,7 +34,6 @@ class GMSHCompoundManager
     interface()=new GModel();
     interface()->setFactory("Gmsh");
     interface()->readMSH(interfaceFileName);
-    convertMesh2GModel(interface());
     // load hole (if present)
     hole()=new GModel();
     hole()->setFactory("Gmsh");
@@ -44,7 +44,7 @@ class GMSHCompoundManager
     }
   }
 
-  ~GMSHCompoundManager()
+  ~GMSHCompoundManagerBase()
   {
     for(auto& model:gmodelptrs_)
       delete model;
@@ -74,6 +74,40 @@ class GMSHCompoundManager
     return hashole_;
   }
 
+  inline void writeCompoundGeo(const std::string& fileName="compound.geo")
+  {
+    compound()->writeGEO(fileName,true,false);
+  }
+  inline void writeCompoundMsh(const std::string& fileName="compound.msh")
+  {
+    compound()->writeMSH(fileName,2.2,false,false);
+  }
+  inline void freeCompound()
+  {
+    delete compound();
+  }
+
+  private:
+  std::array<GModel*,4> gmodelptrs_;
+  bool hashole_;
+};
+
+// different specialization according to the dimension
+template<int Worlddim>
+class GMSHCompoundManager;
+
+// specialization for worlddim = 2
+template<>
+class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
+{
+  public:
+  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
+                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
+    GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
+  {
+    convertMesh2GModel(interface());
+  }
+
   void createCompoundGeo()
   {
     if(compound()!=nullptr)
@@ -91,14 +125,14 @@ class GMSHCompoundManager
 
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
-    if(hashole_)
+    if(hasHole())
       addGModelToCompound(hole(),holeEdges);
 
     // add line loops and faces to compound gmodel
     std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
     (compound()->addPlanarFace(outerLineLoop))->addPhysicalEntity(2);
     std::vector<std::vector<GEdge*>> innerLineLoop({interfaceEdges});
-    if(hashole_)
+    if(hasHole())
       innerLineLoop.push_back(holeEdges);
     (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
   }
@@ -110,25 +144,7 @@ class GMSHCompoundManager
     compound()->mesh(2);
   }
 
-  inline void writeCompoundGeo(const std::string& fileName="compound.geo")
-  {
-    compound()->writeGEO(fileName,true,false);
-  }
-
-  inline void writeCompoundMsh(const std::string& fileName="compound.msh")
-  {
-    compound()->writeMSH(fileName,2.2,false,false);
-  }
-
-  inline void freeCompound()
-  {
-    delete compound();
-  }
-
   private:
-  std::array<GModel*,4> gmodelptrs_;
-  bool hashole_;
-
   void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges)
   {
     unsigned int vtxCounter(0);
@@ -212,5 +228,58 @@ class GMSHCompoundManager
     model=newGModel;
   }
 };
+
+// specialization for worlddim = 3
+template<>
+class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
+{
+  public:
+  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
+                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
+    GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
+  {
+    convertMesh2GModel(interface());
+  }
+
+  void createCompoundGeo()
+  {
+    if(compound()!=nullptr)
+      freeCompound();
+    compound()=new GModel();
+    compound()->setFactory("Gmsh");
+
+    // add domain to compound gmodel
+    addGModelToCompound(domain());
+
+    // add interface to compound gmodel
+    addGModelToCompound(interface());
+
+    // add hole to compound gmodel (if present)
+    if(hasHole())
+      addGModelToCompound(hole());
+
+    // add surface loops and volumes to compound gmodel
+    //TODO
+  }
+
+  inline void createCompoundMsh()
+  {
+    if(compound()==nullptr)
+      createCompoundGeo();
+    compound()->mesh(3);
+  }
+
+  private:
+  void addGModelToCompound(GModel*& model)
+  {
+    //TODO
+  }
+  void convertMesh2GModel(GModel*& model)
+  {
+    //TODO
+  }
+};
+
+
 
 #endif //GMSHCOMPOUNDMANAGER_HH
