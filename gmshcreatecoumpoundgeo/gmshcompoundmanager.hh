@@ -9,6 +9,7 @@
 #include "Gmsh.h"
 #include "GModel.h"
 #include "MLine.h"
+#include "MTriangle.h"
 
 // mesh algorithms type
 enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
@@ -85,6 +86,10 @@ class GMSHCompoundManagerBase
     return isinterfacemsh_;
   }
 
+  inline void writeInterfaceGeo(const std::string& fileName="interface.geo")
+  {
+    interface()->writeGEO(fileName,true,false);
+  }
   inline void writeCompoundGeo(const std::string& fileName="compound.geo")
   {
     compound()->writeGEO(fileName,true,false);
@@ -216,7 +221,6 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
     // add edges
     std::array<unsigned int,2> posVtx({0,0});
     constexpr unsigned int physicalID(1);
-    std::vector<GEdge*> edges(0);
     for(typename GModel::eiter edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
       for(unsigned int i=0;i!=(*edgeIt)->lines.size();++i)
@@ -224,8 +228,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
         MLine* linePtr((*edgeIt)->lines[i]);
         posVtx[0]=verticesMap[linePtr->getVertex(0)->getNum()];
         posVtx[1]=verticesMap[linePtr->getVertex(1)->getNum()];
-        edges.push_back(newGModel->addLine(vertices[posVtx[0]],vertices[posVtx[1]]));
-        (*edges.rbegin())->addPhysicalEntity(physicalID);
+        (newGModel->addLine(vertices[posVtx[0]],vertices[posVtx[1]]))->addPhysicalEntity(physicalID);
       }
     }
     // free old mesh model and assign new gmodel
@@ -358,8 +361,23 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
         }
       }
     }
-    // add edges and surfaces
-    //TODO
+    // add simplices
+    std::array<unsigned int,3> posVtx({0,0,0});
+    constexpr unsigned int physicalID(1);
+    std::vector<GEdge*> simplexEdges(3,nullptr);
+    for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
+    {
+      for(unsigned int i=0;i!=(*faceIt)->triangles.size();++i)
+      {
+        MTriangle* simplexPtr((*faceIt)->triangles[i]);
+        for(unsigned int j=0;j!=3;++j)
+          posVtx[j]=verticesMap[simplexPtr->getVertex(j)->getNum()];
+        for(unsigned int j=0;j!=3;++j)
+          simplexEdges[j]=newGModel->addLine(vertices[posVtx[j]],vertices[posVtx[(j+1)%3]]);
+        std::vector<std::vector<GEdge*>> edgeLoop({simplexEdges});
+        (newGModel->addPlanarFace(edgeLoop))->addPhysicalEntity(physicalID);
+      }
+    }
     // free old mesh model and assign new gmodel
     delete model;
     model=newGModel;
