@@ -103,10 +103,12 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
 {
   public:
   GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
+                      const std::string& holeFileName,const bool& isInterfaceMsh=true,const GmshAlgorithmType& algorithm=automatic,
+                      const bool& verbosity=false):
     GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
   {
-    convertMesh2GModel(interface());
+    if(isInterfaceMsh)
+      convertMesh2GModel(interface());
   }
 
   void createCompoundGeo()
@@ -228,10 +230,12 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
 {
   public:
   GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
+                      const std::string& holeFileName,const bool& isInterfaceMsh=true,const GmshAlgorithmType& algorithm=automatic,
+                      const bool& verbosity=false):
     GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
   {
-    convertMesh2GModel(interface());
+    if(isInterfaceMsh)
+      convertMesh2GModel(interface());
   }
 
   void createCompoundGeo()
@@ -251,7 +255,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
     if(hasHole())
       addGModelToCompound(hole(),holeFaces);
     // add surface loops and volumes to compound gmodel
-    std::vector<std::vector<GFace*>> outerSurfaceLoop({domainFaces});
+    std::vector<std::vector<GFace*>> outerSurfaceLoop({domainFaces,interfaceFaces});
     (compound()->addVolume(outerSurfaceLoop))->addPhysicalEntity(2);
     std::vector<std::vector<GFace*>> innerSurfaceLoop({interfaceFaces});
     if(hasHole())
