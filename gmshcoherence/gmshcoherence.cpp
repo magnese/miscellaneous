@@ -70,7 +70,7 @@ int main(int argc,char* argv[])
     {
       ++contNullPtr;
       #if DEBUG_STATUS
-        std::cout<<i<<": ERROR nullptr for the vertex!"<<std::endl;
+      std::cout<<i<<": ERROR nullptr for the vertex!"<<std::endl;
       #endif
     }
     else
