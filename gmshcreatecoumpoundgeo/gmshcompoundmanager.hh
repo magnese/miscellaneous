@@ -326,7 +326,34 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
 
   void convertMesh2GModel(GModel*& model)
   {
+    // create new gmodel
+    GModel* newGModel(new GModel());
+    newGModel->setFactory("Gmsh");
+    // index all the mesh vertices in a continuous sequence starting at 1
+    model->indexMeshVertices(true,0,true);
+    unsigned int vtxCounter(0);
+    std::vector<GVertex*> vertices(0);
+    std::vector<unsigned int> verticesMap(model->getMaxVertexNumber()+1,0);
+    constexpr double charlenght(1000);
+    // add vertices
+    for(unsigned int i=1;i!=verticesMap.size();++i)
+    {
+      MVertex* vtxPtr(model->getMeshVertexByTag(i));
+      if(vtxPtr!=nullptr)
+      {
+        if(vtxPtr->getIndex()>(-1))
+        {
+          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          verticesMap[i]=vtxCounter;
+          ++vtxCounter;
+        }
+      }
+    }
+    // add edges and surfaces
     //TODO
+    // free old mesh model and assign new gmodel
+    delete model;
+    model=newGModel;
   }
 };
 
