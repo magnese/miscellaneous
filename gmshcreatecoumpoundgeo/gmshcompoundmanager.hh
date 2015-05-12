@@ -115,20 +115,16 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
       freeCompound();
     compound()=new GModel();
     compound()->setFactory("Gmsh");
-
     // add domain to compound gmodel
     std::vector<GEdge*> domainEdges(0);
     addGModelToCompound(domain(),domainEdges);
-
     // add interface to compound gmodel
     std::vector<GEdge*> interfaceEdges(0);
     addGModelToCompound(interface(),interfaceEdges);
-
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
     if(hasHole())
       addGModelToCompound(hole(),holeEdges);
-
     // add line loops and faces to compound gmodel
     std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
     (compound()->addPlanarFace(outerLineLoop))->addPhysicalEntity(2);
@@ -185,14 +181,12 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
     // create new gmodel
     GModel* newGModel(new GModel());
     newGModel->setFactory("Gmsh");
-
     // index all the mesh vertices in a continuous sequence starting at 1
     model->indexMeshVertices(true,0,true);
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     std::vector<unsigned int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
-
     // add vertices
     for(unsigned int i=1;i!=verticesMap.size();++i)
     {
@@ -207,7 +201,6 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
         }
       }
     }
-
     // add edges
     std::array<unsigned int,2> posVtx({0,0});
     constexpr unsigned int physicalID(1);
@@ -223,7 +216,6 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
         (*edges.rbegin())->addPhysicalEntity(physicalID);
       }
     }
-
     // free old mesh model and assign new gmodel
     delete model;
     model=newGModel;
@@ -248,19 +240,23 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
       freeCompound();
     compound()=new GModel();
     compound()->setFactory("Gmsh");
-
     // add domain to compound gmodel
-    addGModelToCompound(domain());
-
+    std::vector<GFace*> domainFaces(0);
+    addGModelToCompound(domain(),domainFaces);
     // add interface to compound gmodel
-    addGModelToCompound(interface());
-
+    std::vector<GFace*> interfaceFaces(0);
+    addGModelToCompound(interface(),interfaceFaces);
     // add hole to compound gmodel (if present)
+    std::vector<GFace*> holeFaces(0);
     if(hasHole())
-      addGModelToCompound(hole());
-
+      addGModelToCompound(hole(),holeFaces);
     // add surface loops and volumes to compound gmodel
-    //TODO
+    std::vector<std::vector<GFace*>> outerSurfaceLoop({domainFaces});
+    (compound()->addVolume(outerSurfaceLoop))->addPhysicalEntity(2);
+    std::vector<std::vector<GFace*>> innerSurfaceLoop({interfaceFaces});
+    if(hasHole())
+      innerSurfaceLoop.push_back(holeFaces);
+    (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
   }
 
   inline void createCompoundMsh()
@@ -271,24 +267,27 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
   }
 
   private:
-  void addGModelToCompound(GModel*& model)
+  void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces)
   {
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
     unsigned int vtxCounter(0);
-
     std::vector<GEdge*> edges(0);
+    // loop over faces
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
+      // get face physical ID
       unsigned int physicalID(((*faceIt)->getPhysicalEntities())[0]);
       std::list<GEdge*> edgesList((*faceIt)->edges());
+      std::list<int> orientationsList((*faceIt)->edgeOrientations());
       edges.resize(edgesList.size());
       unsigned int edgeCounter(0);
-      std::list<int>::iterator edgeOrientationIter((*faceIt)->edgeOrientations().begin());
-
+      typename std::list<int>::iterator orientationIt(orientationsList.begin());
+      // loop over edges
       for(auto& edge:edgesList)
       {
+        // add first vertex
         vtxPtr[0]=edge->getBeginVertex();
         if(verticesMap[vtxPtr[0]->tag()]==-1)
         {
@@ -297,7 +296,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
           ++vtxCounter;
         }
         vtxPtr[0]=vertices[verticesMap[vtxPtr[0]->tag()]];
-
+        // add last vertex
         vtxPtr[1]=edge->getEndVertex();
         if(verticesMap[vtxPtr[1]->tag()]==-1)
         {
@@ -306,16 +305,18 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
           ++vtxCounter;
         }
         vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
-
-        if(*edgeOrientationIter<0)
+        // swap vertices if the orientation<0
+        if(*orientationIt<0)
           std::swap(vtxPtr[0],vtxPtr[1]);
-        ++edgeOrientationIter;
-
+        ++orientationIt;
+        // add edge
         edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
         ++edgeCounter;
       }
-      std::vector<std::vector<GEdge*>> lineLoop(1,edges);
-      (compound()->addPlanarFace(lineLoop))->addPhysicalEntity(physicalID);
+      // add lineloop
+      std::vector<std::vector<GEdge*>> lineLoop({edges});
+      faces.push_back(compound()->addPlanarFace(lineLoop));
+      (*(faces.rbegin()))->addPhysicalEntity(physicalID);
     }
   }
 
@@ -324,7 +325,5 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
     //TODO
   }
 };
-
-
 
 #endif //GMSHCOMPOUNDMANAGER_HH
