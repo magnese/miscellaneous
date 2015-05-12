@@ -30,7 +30,7 @@ int main(int argc,char** argv)
 
   // create gmodels and dump compund geo file
   constexpr int worlddim(3);
-  GMSHCompoundManager<worlddim> compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName,true,automatic,true);
+  GMSHCompoundManager<worlddim> compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName,automatic,true);
   compoundManager.createCompoundGeo();
   compoundManager.writeCompoundGeo();
 

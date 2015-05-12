@@ -19,7 +19,7 @@ class GMSHCompoundManagerBase
   public:
   GMSHCompoundManagerBase(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
                           const std::string& holeFileName,const GmshAlgorithmType& algorithm,const bool& verbosity):
-    gmodelptrs_(),hashole_(false)
+    gmodelptrs_(),hashole_(false),isinterfacemsh_(true)
   {
     // init gmsh
     GmshInitialize(argc,argv);
@@ -32,9 +32,15 @@ class GMSHCompoundManagerBase
     domain()->setFactory("Gmsh");
     domain()->readGEO(domainFileName);
     // load interface
+    std::size_t found(interfaceFileName.find(".geo"));
+    if(found!=std::string::npos)
+      isinterfacemsh_=false;
     interface()=new GModel();
     interface()->setFactory("Gmsh");
-    interface()->readMSH(interfaceFileName);
+    if(isInterfaceMsh())
+      interface()->readMSH(interfaceFileName);
+    else
+      interface()->readGEO(interfaceFileName);
     // load hole (if present)
     hole()=new GModel();
     hole()->setFactory("Gmsh");
@@ -74,6 +80,10 @@ class GMSHCompoundManagerBase
   {
     return hashole_;
   }
+  inline const bool& isInterfaceMsh() const
+  {
+    return isinterfacemsh_;
+  }
 
   inline void writeCompoundGeo(const std::string& fileName="compound.geo")
   {
@@ -91,6 +101,7 @@ class GMSHCompoundManagerBase
   private:
   std::array<GModel*,4> gmodelptrs_;
   bool hashole_;
+  bool isinterfacemsh_;
 };
 
 // different specialization according to the dimension
@@ -103,11 +114,10 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase
 {
   public:
   GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const bool& isInterfaceMsh=true,const GmshAlgorithmType& algorithm=automatic,
-                      const bool& verbosity=false):
+                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
     GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
   {
-    if(isInterfaceMsh)
+    if(isInterfaceMsh())
       convertMesh2GModel(interface());
   }
 
@@ -230,11 +240,10 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase
 {
   public:
   GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const bool& isInterfaceMsh=true,const GmshAlgorithmType& algorithm=automatic,
-                      const bool& verbosity=false):
+                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
     GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
   {
-    if(isInterfaceMsh)
+    if(isInterfaceMsh())
       convertMesh2GModel(interface());
   }
 
