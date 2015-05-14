@@ -193,7 +193,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
       vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
       // add edge
       edges.push_back(compound()->addLine(vtxPtr[0],vtxPtr[1]));
-      (*edges.rbegin())->addPhysicalEntity(physicalID);
+      edges.back()->addPhysicalEntity(physicalID);
     }
   }
 
@@ -330,7 +330,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
       // add lineloop
       std::vector<std::vector<GEdge*>> lineLoop({edges});
       faces.push_back(compound()->addPlanarFace(lineLoop));
-      (*(faces.rbegin()))->addPhysicalEntity(physicalID);
+      faces.back()->addPhysicalEntity(physicalID);
     }
   }
 
