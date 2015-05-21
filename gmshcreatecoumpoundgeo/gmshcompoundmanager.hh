@@ -15,7 +15,7 @@
 enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
 // base class
-template<unsigned int worlddim>
+template<unsigned int dim>
 class GMSHCompoundManagerBase
 {
   protected:
@@ -62,10 +62,8 @@ class GMSHCompoundManagerBase
   }
 
   public:
-  inline unsigned int worlddimension()
-  {
-    return worlddim;
-  }
+  static constexpr unsigned int worlddim=dim;
+  static constexpr unsigned int griddim=dim;
 
   inline GModel*& domain()
   {
@@ -94,7 +92,7 @@ class GMSHCompoundManagerBase
   }
   inline void createCompoundMsh()
   {
-    compound()->mesh(worlddim);
+    compound()->mesh(griddim);
   }
 
   inline void writeInterfaceGeo(const std::string& fileName="interface.geo")
@@ -121,7 +119,7 @@ class GMSHCompoundManagerBase
 };
 
 // different specialization according to the dimension
-template<unsigned int worlddim>
+template<unsigned int dim>
 class GMSHCompoundManager;
 
 // specialization for worlddim = 2
@@ -165,14 +163,14 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
   private:
   void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges)
   {
-    std::size_t vtxCounter(0);
+    unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
     for(typename GModel::eiter it=model->firstEdge();it!=model->lastEdge();++it)
     {
       // get edge physical ID
-      unsigned int physicalID(((*it)->getPhysicalEntities())[0]);
+      const unsigned int physicalID(((*it)->getPhysicalEntities())[0]);
       // add first vertex
       vtxPtr[0]=(*it)->getBeginVertex();
       if(verticesMap[vtxPtr[0]->tag()]==-1)
@@ -204,9 +202,9 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
     newGModel->setFactory("Gmsh");
     // index all the mesh vertices in a continuous sequence starting at 1
     model->indexMeshVertices(true,0,true);
-    std::size_t vtxCounter(0);
+    unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::vector<std::size_t> verticesMap(model->getMaxVertexNumber()+1,0);
+    std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
     // add vertices
     for(std::size_t i=1;i!=verticesMap.size();++i)
@@ -223,8 +221,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
       }
     }
     // add edges
-    constexpr std::size_t worlddim(2);
-    std::array<std::size_t,worlddim> posVtx({0,0});
+    std::array<unsigned int,worlddim> posVtx({0,0});
     constexpr unsigned int physicalID(1);
     for(typename GModel::eiter edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
@@ -286,17 +283,17 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
-    std::size_t vtxCounter(0);
+    unsigned int vtxCounter(0);
     std::vector<GEdge*> edges(0);
     // loop over faces
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
       // get face physical ID
-      unsigned int physicalID(((*faceIt)->getPhysicalEntities())[0]);
+      const unsigned int physicalID(((*faceIt)->getPhysicalEntities())[0]);
       std::list<GEdge*> edgesList((*faceIt)->edges());
       std::list<int> orientationsList((*faceIt)->edgeOrientations());
       edges.resize(edgesList.size());
-      std::size_t edgeCounter(0);
+      unsigned int edgeCounter(0);
       typename std::list<int>::iterator orientationIt(orientationsList.begin());
       // loop over edges
       for(auto& edge:edgesList)
@@ -341,9 +338,9 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
     newGModel->setFactory("Gmsh");
     // index all the mesh vertices in a continuous sequence starting at 1
     model->indexMeshVertices(true,0,true);
-    std::size_t vtxCounter(0);
+    unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::vector<std::size_t> verticesMap(model->getMaxVertexNumber()+1,0);
+    std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
     // add vertices
     for(std::size_t i=1;i!=verticesMap.size();++i)
@@ -360,8 +357,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
       }
     }
     // add simplices
-    constexpr std::size_t worlddim(3);
-    std::array<std::size_t,worlddim> posVtx({0,0,0});
+    std::array<unsigned int,worlddim> posVtx({0,0,0});
     constexpr unsigned int physicalID(1);
     std::vector<GEdge*> simplexEdges(worlddim,nullptr);
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
