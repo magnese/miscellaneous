@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <list>
+#include <map>
 
 #include "Gmsh.h"
 #include "GModel.h"
@@ -45,7 +46,9 @@ class GMSHCompoundManagerBase
       hashole_=true;
     }
     imp().createCompoundGeo();
+#if 0
     compound()->mesh(worlddim);
+#endif
   }
 
   protected:
@@ -266,6 +269,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     // add domain to compound gmodel
     std::vector<GFace*> domainFaces(0);
     addGModelToCompound(domain(),domainFaces);
+#if 0
     // add interface to compound gmodel
     std::vector<GFace*> interfaceFaces(0);
     addGModelToCompound(interface(),interfaceFaces);
@@ -280,6 +284,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     if(hasHole())
       innerSurfaceLoop.push_back(holeFaces);
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
+#endif
   }
 
   void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces)
@@ -288,7 +293,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
     unsigned int vtxCounter(0);
-    std::vector<GEdge*> edges(0);
+    std::map<int,GEdge*> edgesMap;
     // loop over faces
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
@@ -296,12 +301,15 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
       const int physicalID(((*faceIt)->getPhysicalEntities())[0]);
       std::list<GEdge*> edgesList((*faceIt)->edges());
       std::list<int> orientationsList((*faceIt)->edgeOrientations());
-      edges.resize(edgesList.size());
+      std::vector<GEdge*> edges(edgesList.size(),0);
       unsigned int edgeCounter(0);
       typename std::list<int>::iterator orientationIt(orientationsList.begin());
       // loop over edges
       for(auto& edge:edgesList)
       {
+        typename std::map<int,GEdge*>::iterator edgeMapIt(edgesMap.find(edge->tag()));
+        if(edgeMapIt==edgesMap.end())
+        {
         // add first vertex
         vtxPtr[0]=edge->getBeginVertex();
         if(verticesMap[vtxPtr[0]->tag()]==-1)
@@ -321,11 +329,17 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
         }
         vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
         // swap vertices if the orientation<0
-        if(*orientationIt<0)
-          std::swap(vtxPtr[0],vtxPtr[1]);
+        //if(*orientationIt<0)
+        //  std::swap(vtxPtr[0],vtxPtr[1]);
         ++orientationIt;
         // add edge
         edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
+        edgesMap.insert(std::pair<int,GEdge*>((edges[edgeCounter])->tag(),edges[edgeCounter]));
+
+        }
+        else
+          edges[edgeCounter]=edgeMapIt->second;
+
         ++edgeCounter;
       }
       // add lineloop

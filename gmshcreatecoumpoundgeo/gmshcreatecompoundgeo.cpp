@@ -28,7 +28,7 @@ int main(int argc,char** argv)
     }
   }
   // create gmodels
-  constexpr unsigned int worlddim(2);
+  constexpr unsigned int worlddim(3);
   GMSHCompoundManager<worlddim> compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName,automatic,true);
   compoundManager.create();
   // dump compound on file
