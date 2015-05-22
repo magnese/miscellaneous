@@ -46,9 +46,7 @@ class GMSHCompoundManagerBase
       hashole_=true;
     }
     imp().createCompoundGeo();
-#if 0
     compound()->mesh(worlddim);
-#endif
   }
 
   protected:
@@ -269,7 +267,6 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     // add domain to compound gmodel
     std::vector<GFace*> domainFaces(0);
     addGModelToCompound(domain(),domainFaces);
-#if 0
     // add interface to compound gmodel
     std::vector<GFace*> interfaceFaces(0);
     addGModelToCompound(interface(),interfaceFaces);
@@ -284,7 +281,6 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     if(hasHole())
       innerSurfaceLoop.push_back(holeFaces);
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
-#endif
   }
 
   void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces)
@@ -300,10 +296,8 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
       // get face physical ID
       const int physicalID(((*faceIt)->getPhysicalEntities())[0]);
       std::list<GEdge*> edgesList((*faceIt)->edges());
-      std::list<int> orientationsList((*faceIt)->edgeOrientations());
       std::vector<GEdge*> edges(edgesList.size(),0);
       unsigned int edgeCounter(0);
-      typename std::list<int>::iterator orientationIt(orientationsList.begin());
       // loop over edges
       for(auto& edge:edgesList)
       {
@@ -328,18 +322,13 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
           ++vtxCounter;
         }
         vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
-        // swap vertices if the orientation<0
-        //if(*orientationIt<0)
-        //  std::swap(vtxPtr[0],vtxPtr[1]);
-        ++orientationIt;
         // add edge
         edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
-        edgesMap.insert(std::pair<int,GEdge*>((edges[edgeCounter])->tag(),edges[edgeCounter]));
+        edgesMap.insert(std::pair<int,GEdge*>(edge->tag(),edges[edgeCounter]));
 
         }
         else
           edges[edgeCounter]=edgeMapIt->second;
-
         ++edgeCounter;
       }
       // add lineloop
