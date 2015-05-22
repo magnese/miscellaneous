@@ -27,13 +27,12 @@ int main(int argc,char** argv)
       std::cout<<"Hole: "<<holeFileName<<std::endl;
     }
   }
-  // create gmodels and dump compund geo file
+  // create gmodels
   constexpr unsigned int worlddim(2);
   GMSHCompoundManager<worlddim> compoundManager(argc,argv,domainFileName,interfaceFileName,holeFileName,automatic,true);
-  compoundManager.createCompoundGeo();
+  compoundManager.create();
+  // dump compound on file
   compoundManager.writeCompoundGeo();
-  // create compund mesh and dump it
-  compoundManager.createCompoundMsh();
   compoundManager.writeCompoundMsh();
   // return
   return 0;

@@ -15,13 +15,45 @@
 enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
 // base class
-template<unsigned int dim>
+template<unsigned int dim,typename Imp>
 class GMSHCompoundManagerBase
 {
+  public:
+  inline void create()
+  {
+    // load domain
+    domain()=new GModel();
+    domain()->setFactory("Gmsh");
+    domain()->readGEO(domainfilename_);
+    // load interface
+    interface()=new GModel();
+    interface()->setFactory("Gmsh");
+    std::size_t found(interfacefilename_.find(".geo"));
+    if(found!=std::string::npos)
+      interface()->readGEO(interfacefilename_);
+    else
+    {
+      interface()->readMSH(interfacefilename_);
+      imp().interfaceMesh2GModel(interface());
+    }
+    // load hole (if present)
+    hole()=new GModel();
+    hole()->setFactory("Gmsh");
+    if(holefilename_!="")
+    {
+      hole()->readGEO(holefilename_);
+      hashole_=true;
+    }
+    imp().createCompoundGeo();
+    compound()->mesh(worlddim);
+  }
+
   protected:
+  typedef Imp Implementation;
+
   GMSHCompoundManagerBase(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
                           const std::string& holeFileName,const GmshAlgorithmType& algorithm,const bool& verbosity):
-    gmodelptrs_(),hashole_(false),isinterfacemsh_(true)
+    domainfilename_(domainFileName),interfacefilename_(interfaceFileName),holefilename_(holeFileName),gmodelptrs_(),hashole_(false)
   {
     // init gmsh
     GmshInitialize(argc,argv);
@@ -29,41 +61,19 @@ class GMSHCompoundManagerBase
     if(verbosity)
       GmshSetOption("General","Verbosity",99.);
     GmshSetOption("Mesh","Algorithm",static_cast<double>(algorithm));
-    // load domain
-    domain()=new GModel();
-    domain()->setFactory("Gmsh");
-    domain()->readGEO(domainFileName);
-    // load interface
-    std::size_t found(interfaceFileName.find(".geo"));
-    if(found!=std::string::npos)
-      isinterfacemsh_=false;
-    interface()=new GModel();
-    interface()->setFactory("Gmsh");
-    if(isInterfaceMsh())
-      interface()->readMSH(interfaceFileName);
-    else
-      interface()->readGEO(interfaceFileName);
-    // load hole (if present)
-    hole()=new GModel();
-    hole()->setFactory("Gmsh");
-    if(holeFileName!="")
-    {
-      hole()->readGEO(holeFileName);
-      hashole_=true;
-    }
   }
 
   ~GMSHCompoundManagerBase()
   {
     for(auto& model:gmodelptrs_)
       delete model;
-    // finalize gmsh
     GmshFinalize();
   }
 
-  public:
-  static constexpr unsigned int worlddim=dim;
-  static constexpr unsigned int griddim=dim;
+  inline Implementation& imp()
+  {
+    return static_cast<Implementation&>(*this);
+  }
 
   inline GModel*& domain()
   {
@@ -86,18 +96,15 @@ class GMSHCompoundManagerBase
   {
     return hashole_;
   }
-  inline const bool& isInterfaceMsh() const
-  {
-    return isinterfacemsh_;
-  }
-  inline void createCompoundMsh()
-  {
-    compound()->mesh(griddim);
-  }
 
+  public:
   inline void writeInterfaceGeo(const std::string& fileName="interface.geo")
   {
     interface()->writeGEO(fileName,true,false);
+  }
+  inline void writeInterfaceMsh(const std::string& fileName="interface.msh")
+  {
+    interface()->writeMSH(fileName,2.2,false,false);
   }
   inline void writeCompoundGeo(const std::string& fileName="compound.geo")
   {
@@ -107,15 +114,15 @@ class GMSHCompoundManagerBase
   {
     compound()->writeMSH(fileName,2.2,false,false);
   }
-  inline void freeCompound()
-  {
-    delete compound();
-  }
+
+  static constexpr unsigned int worlddim=dim;
 
   private:
+  const std::string& domainfilename_;
+  const std::string& interfacefilename_;
+  const std::string& holefilename_;
   std::array<GModel*,4> gmodelptrs_;
   bool hashole_;
-  bool isinterfacemsh_;
 };
 
 // different specialization according to the dimension
@@ -124,21 +131,21 @@ class GMSHCompoundManager;
 
 // specialization for worlddim = 2
 template<>
-class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
+class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManager<2>>
 {
-  public:
-  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
-    GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
-  {
-    if(isInterfaceMsh())
-      convertMesh2GModel(interface());
-  }
 
+  friend GMSHCompoundManagerBase<2,GMSHCompoundManager<2>>;
+
+  public:
+  template<typename... Args>
+  inline GMSHCompoundManager(Args... args):GMSHCompoundManagerBase(args...)
+  {}
+
+  private:
   void createCompoundGeo()
   {
     if(compound()!=nullptr)
-      freeCompound();
+      delete compound();
     compound()=new GModel();
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
@@ -160,17 +167,16 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
     (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
   }
 
-  private:
   void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges)
   {
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
+    std::array<GVertex*,worlddim> vtxPtr;
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
     for(typename GModel::eiter it=model->firstEdge();it!=model->lastEdge();++it)
     {
       // get edge physical ID
-      const unsigned int physicalID(((*it)->getPhysicalEntities())[0]);
+      const int physicalID(((*it)->getPhysicalEntities())[0]);
       // add first vertex
       vtxPtr[0]=(*it)->getBeginVertex();
       if(verticesMap[vtxPtr[0]->tag()]==-1)
@@ -195,7 +201,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
     }
   }
 
-  void convertMesh2GModel(GModel*& model)
+  void interfaceMesh2GModel(GModel*& model)
   {
     // create new gmodel
     GModel* newGModel(new GModel());
@@ -221,8 +227,8 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
       }
     }
     // add edges
-    std::array<unsigned int,worlddim> posVtx({0,0});
-    constexpr unsigned int physicalID(1);
+    std::array<unsigned int,worlddim> posVtx;
+    constexpr int physicalID(1);
     for(typename GModel::eiter edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
       for(std::size_t i=0;i!=(*edgeIt)->lines.size();++i)
@@ -241,21 +247,20 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2>
 
 // specialization for worlddim = 3
 template<>
-class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
+class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManager<3>>
 {
-  public:
-  GMSHCompoundManager(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
-                      const std::string& holeFileName,const GmshAlgorithmType& algorithm=automatic,const bool& verbosity=false):
-    GMSHCompoundManagerBase(argc,argv,domainFileName,interfaceFileName,holeFileName,algorithm,verbosity)
-  {
-    if(isInterfaceMsh())
-      convertMesh2GModel(interface());
-  }
+  friend GMSHCompoundManagerBase<3,GMSHCompoundManager<3>>;
 
+  public:
+  template<typename... Args>
+  inline GMSHCompoundManager(Args... args):GMSHCompoundManagerBase(args...)
+  {}
+
+  private:
   void createCompoundGeo()
   {
     if(compound()!=nullptr)
-      freeCompound();
+      delete compound();
     compound()=new GModel();
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
@@ -277,7 +282,6 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
   }
 
-  private:
   void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces)
   {
     std::vector<GVertex*> vertices(0);
@@ -289,7 +293,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
       // get face physical ID
-      const unsigned int physicalID(((*faceIt)->getPhysicalEntities())[0]);
+      const int physicalID(((*faceIt)->getPhysicalEntities())[0]);
       std::list<GEdge*> edgesList((*faceIt)->edges());
       std::list<int> orientationsList((*faceIt)->edgeOrientations());
       edges.resize(edgesList.size());
@@ -331,7 +335,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
     }
   }
 
-  void convertMesh2GModel(GModel*& model)
+  void interfaceMesh2GModel(GModel*& model)
   {
     // create new gmodel
     GModel* newGModel(new GModel());
@@ -357,8 +361,8 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3>
       }
     }
     // add simplices
-    std::array<unsigned int,worlddim> posVtx({0,0,0});
-    constexpr unsigned int physicalID(1);
+    std::array<unsigned int,worlddim> posVtx;
+    constexpr int physicalID(1);
     std::vector<GEdge*> simplexEdges(worlddim,nullptr);
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
