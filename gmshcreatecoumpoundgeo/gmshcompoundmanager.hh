@@ -304,28 +304,27 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
         typename std::map<int,GEdge*>::iterator edgeMapIt(edgesMap.find(edge->tag()));
         if(edgeMapIt==edgesMap.end())
         {
-        // add first vertex
-        vtxPtr[0]=edge->getBeginVertex();
-        if(verticesMap[vtxPtr[0]->tag()]==-1)
-        {
-          vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
-          verticesMap[vtxPtr[0]->tag()]=vtxCounter;
-          ++vtxCounter;
-        }
-        vtxPtr[0]=vertices[verticesMap[vtxPtr[0]->tag()]];
-        // add last vertex
-        vtxPtr[1]=edge->getEndVertex();
-        if(verticesMap[vtxPtr[1]->tag()]==-1)
-        {
-          vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
-          verticesMap[vtxPtr[1]->tag()]=vtxCounter;
-          ++vtxCounter;
-        }
-        vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
-        // add edge
-        edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
-        edgesMap.insert(std::pair<int,GEdge*>(edge->tag(),edges[edgeCounter]));
-
+          // add first vertex
+          vtxPtr[0]=edge->getBeginVertex();
+          if(verticesMap[vtxPtr[0]->tag()]==-1)
+          {
+            vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
+            verticesMap[vtxPtr[0]->tag()]=vtxCounter;
+            ++vtxCounter;
+          }
+          vtxPtr[0]=vertices[verticesMap[vtxPtr[0]->tag()]];
+          // add last vertex
+          vtxPtr[1]=edge->getEndVertex();
+          if(verticesMap[vtxPtr[1]->tag()]==-1)
+          {
+            vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
+            verticesMap[vtxPtr[1]->tag()]=vtxCounter;
+            ++vtxCounter;
+          }
+          vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
+          // add edge
+          edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
+          edgesMap.insert(std::pair<int,GEdge*>(edge->tag(),edges[edgeCounter]));
         }
         else
           edges[edgeCounter]=edgeMapIt->second;
