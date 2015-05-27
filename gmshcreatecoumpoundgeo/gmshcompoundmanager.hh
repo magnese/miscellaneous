@@ -346,7 +346,8 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     model->indexMeshVertices(true,0,true);
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
+    typedef std::list<GEdge*> EdgeList;
+    std::vector<std::pair<int,EdgeList>> verticesMap(model->getMaxVertexNumber()+1,std::make_pair(0,EdgeList()));
     constexpr double charlenght(1000);
     // add vertices
     for(std::size_t i=1;i!=verticesMap.size();++i)
@@ -357,24 +358,53 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
         if(vtxPtr->getIndex()>(-1))
         {
           vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
-          verticesMap[i]=vtxCounter;
+          verticesMap[i].first=vtxCounter;
           ++vtxCounter;
         }
       }
     }
     // add simplices
-    std::array<unsigned int,worlddim> posVtx;
+    std::array<unsigned int,worlddim> idVtx;
     constexpr int physicalID(1);
     std::vector<GEdge*> simplexEdges(worlddim,nullptr);
+    std::map<int,GEdge*> edgesMap;
     for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
       for(std::size_t i=0;i!=(*faceIt)->triangles.size();++i)
       {
         MTriangle* simplexPtr((*faceIt)->triangles[i]);
-        for(std::size_t j=0;j!=worlddim;++j)
-          posVtx[j]=verticesMap[simplexPtr->getVertex(j)->getNum()];
-        for(std::size_t j=0;j!=worlddim;++j)
-          simplexEdges[j]=newGModel->addLine(vertices[posVtx[j]],vertices[posVtx[(j+1)%worlddim]]);
+        // loop over edges
+        for(std::size_t l=0;l!=worlddim;++l)
+        {
+          // get index of the 2 vertices
+          for(std::size_t k=0;k!=2;++k)
+            idVtx[k]=simplexPtr->getVertex((l+k)%worlddim)->getNum();
+          // check if the edge has already been inserted
+          typedef typename EdgeList::iterator EdgeListIter;
+          EdgeListIter edge0It(verticesMap[idVtx[0]].second.begin());
+          const EdgeListIter edge0ItEnd(verticesMap[idVtx[0]].second.end());
+          const EdgeListIter edge1ItEnd(verticesMap[idVtx[1]].second.end());
+          bool found(false);
+          std::cout<<"Entering"<<std::endl;
+          while((edge0It!=edge0ItEnd)&&(!found))
+          {
+            for(EdgeListIter edge1It=verticesMap[idVtx[1]].second.begin();(edge1It!=edge1ItEnd)&&(!found);++edge1It)
+              if((*edge0It)->tag()==(*edge1It)->tag())
+                found=true;
+            if(!found)
+              ++edge0It;
+          }
+          std::cout<<"Leaving"<<std::endl;
+          // use the already inserted edge or create the new one
+          if(found)
+            simplexEdges[l]=*edge0It;
+          else
+          {
+            simplexEdges[l]=newGModel->addLine(vertices[verticesMap[idVtx[0]].first],vertices[verticesMap[idVtx[1]].first]);
+            verticesMap[idVtx[0]].second.push_back(simplexEdges[l]);
+            verticesMap[idVtx[1]].second.push_back(simplexEdges[l]);
+          }
+        }
         std::vector<std::vector<GEdge*>> edgeLoop({simplexEdges});
         (newGModel->addPlanarFace(edgeLoop))->addPhysicalEntity(physicalID);
       }
