@@ -29,7 +29,7 @@ class GMSHCompoundManagerBase
     // load interface
     interface()=new GModel();
     interface()->setFactory("Gmsh");
-    std::size_t found(interfacefilename_.find(".geo"));
+    auto found(interfacefilename_.find(".geo"));
     if(found!=std::string::npos)
       interface()->readGEO(interfacefilename_);
     else
@@ -174,10 +174,10 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,worlddim> vtxPtr;
     std::vector<int> verticesMap(model->getNumVertices()+1,-1);
-    for(typename GModel::eiter it=model->firstEdge();it!=model->lastEdge();++it)
+    for(auto it=model->firstEdge();it!=model->lastEdge();++it)
     {
       // get edge physical ID
-      const int physicalID(((*it)->getPhysicalEntities())[0]);
+      const auto physicalID(((*it)->getPhysicalEntities())[0]);
       // add first vertex
       vtxPtr[0]=(*it)->getBeginVertex();
       if(verticesMap[vtxPtr[0]->tag()]==-1)
@@ -214,9 +214,9 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlenght(1000);
     // add vertices
-    for(std::size_t i=1;i!=verticesMap.size();++i)
+    for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
     {
-      MVertex* vtxPtr(model->getMeshVertexByTag(i));
+      auto vtxPtr(model->getMeshVertexByTag(i));
       if(vtxPtr!=nullptr)
       {
         if(vtxPtr->getIndex()>(-1))
@@ -230,11 +230,11 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     // add edges
     std::array<unsigned int,worlddim> posVtx;
     constexpr int physicalID(1);
-    for(typename GModel::eiter edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
+    for(auto edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
-      for(std::size_t i=0;i!=(*edgeIt)->lines.size();++i)
+      for(decltype((*edgeIt)->lines.size()) i=0;i!=(*edgeIt)->lines.size();++i)
       {
-        MLine* linePtr((*edgeIt)->lines[i]);
+        auto linePtr((*edgeIt)->lines[i]);
         posVtx[0]=verticesMap[linePtr->getVertex(0)->getNum()];
         posVtx[1]=verticesMap[linePtr->getVertex(1)->getNum()];
         (newGModel->addLine(vertices[posVtx[0]],vertices[posVtx[1]]))->addPhysicalEntity(physicalID);
@@ -291,17 +291,17 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     unsigned int vtxCounter(0);
     std::map<int,GEdge*> edgesMap;
     // loop over faces
-    for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
+    for(auto faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
       // get face physical ID
-      const int physicalID(((*faceIt)->getPhysicalEntities())[0]);
-      std::list<GEdge*> edgesList((*faceIt)->edges());
+      const auto physicalID(((*faceIt)->getPhysicalEntities())[0]);
+      auto edgesList((*faceIt)->edges());
       std::vector<GEdge*> edges(edgesList.size(),0);
       unsigned int edgeCounter(0);
       // loop over edges
       for(auto& edge:edgesList)
       {
-        typename std::map<int,GEdge*>::iterator edgeMapIt(edgesMap.find(edge->tag()));
+        auto edgeMapIt(edgesMap.find(edge->tag()));
         if(edgeMapIt==edgesMap.end())
         {
           // add first vertex
@@ -350,9 +350,9 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     std::vector<std::pair<int,EdgeList>> verticesMap(model->getMaxVertexNumber()+1,std::make_pair(0,EdgeList()));
     constexpr double charlenght(1000);
     // add vertices
-    for(std::size_t i=1;i!=verticesMap.size();++i)
+    for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
     {
-      MVertex* vtxPtr(model->getMeshVertexByTag(i));
+      auto vtxPtr(model->getMeshVertexByTag(i));
       if(vtxPtr!=nullptr)
       {
         if(vtxPtr->getIndex()>(-1))
@@ -368,33 +368,30 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     constexpr int physicalID(1);
     std::vector<GEdge*> simplexEdges(worlddim,nullptr);
     std::map<int,GEdge*> edgesMap;
-    for(typename GModel::fiter faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
+    for(auto faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
-      for(std::size_t i=0;i!=(*faceIt)->triangles.size();++i)
+      for(decltype((*faceIt)->triangles.size()) i=0;i!=(*faceIt)->triangles.size();++i)
       {
-        MTriangle* simplexPtr((*faceIt)->triangles[i]);
+        auto simplexPtr((*faceIt)->triangles[i]);
         // loop over edges
-        for(std::size_t l=0;l!=worlddim;++l)
+        for(auto l=0;l!=worlddim;++l)
         {
           // get index of the 2 vertices
-          for(std::size_t k=0;k!=2;++k)
+          for(auto k=0;k!=2;++k)
             idVtx[k]=simplexPtr->getVertex((l+k)%worlddim)->getNum();
           // check if the edge has already been inserted
-          typedef typename EdgeList::iterator EdgeListIter;
-          EdgeListIter edge0It(verticesMap[idVtx[0]].second.begin());
-          const EdgeListIter edge0ItEnd(verticesMap[idVtx[0]].second.end());
-          const EdgeListIter edge1ItEnd(verticesMap[idVtx[1]].second.end());
+          auto edge0It(verticesMap[idVtx[0]].second.begin());
+          const auto edge0ItEnd(verticesMap[idVtx[0]].second.end());
+          const auto edge1ItEnd(verticesMap[idVtx[1]].second.end());
           bool found(false);
-          std::cout<<"Entering"<<std::endl;
           while((edge0It!=edge0ItEnd)&&(!found))
           {
-            for(EdgeListIter edge1It=verticesMap[idVtx[1]].second.begin();(edge1It!=edge1ItEnd)&&(!found);++edge1It)
+            for(auto edge1It=verticesMap[idVtx[1]].second.begin();(edge1It!=edge1ItEnd)&&(!found);++edge1It)
               if((*edge0It)->tag()==(*edge1It)->tag())
                 found=true;
             if(!found)
               ++edge0It;
           }
-          std::cout<<"Leaving"<<std::endl;
           // use the already inserted edge or create the new one
           if(found)
             simplexEdges[l]=*edge0It;
