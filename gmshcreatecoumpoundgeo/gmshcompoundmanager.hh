@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <functional>
 
 #include "Gmsh.h"
 #include "GModel.h"
@@ -143,7 +144,8 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
   {}
 
   private:
-  void createCompoundGeo()
+  void createCompoundGeo(const std::function<double(const GVertex& vtx)>& charLength=
+                                                                          [](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();})
   {
     if(compound()!=nullptr)
       delete compound();
@@ -151,14 +153,14 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
     std::vector<GEdge*> domainEdges(0);
-    addGModelToCompound(domain(),domainEdges);
+    addGModelToCompound(domain(),domainEdges,charLength);
     // add interface to compound gmodel
     std::vector<GEdge*> interfaceEdges(0);
-    addGModelToCompound(interface(),interfaceEdges);
+    addGModelToCompound(interface(),interfaceEdges,[](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();});
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
     if(hasHole())
-      addGModelToCompound(hole(),holeEdges);
+      addGModelToCompound(hole(),holeEdges,charLength);
     // add line loops and faces to compound gmodel
     std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
     (compound()->addPlanarFace(outerLineLoop))->addPhysicalEntity(2);
@@ -168,7 +170,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges)
+  void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges,const std::function<double(const GVertex& vtx)>& charLength)
   {
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
@@ -182,7 +184,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
       vtxPtr[0]=(*it)->getBeginVertex();
       if(verticesMap[vtxPtr[0]->tag()]==-1)
       {
-        vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
+        vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charLength(*(vtxPtr[0]))));
         verticesMap[vtxPtr[0]->tag()]=vtxCounter;
         ++vtxCounter;
       }
@@ -191,7 +193,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
       vtxPtr[1]=(*it)->getEndVertex();
       if(verticesMap[vtxPtr[1]->tag()]==-1)
       {
-        vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
+        vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charLength(*(vtxPtr[1]))));
         verticesMap[vtxPtr[1]->tag()]=vtxCounter;
         ++vtxCounter;
       }
@@ -258,7 +260,8 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
   {}
 
   private:
-  void createCompoundGeo()
+  void createCompoundGeo(const std::function<double(const GVertex& vtx)>& charLength=
+                                                                          [](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();})
   {
     if(compound()!=nullptr)
       delete compound();
@@ -266,14 +269,14 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
     std::vector<GFace*> domainFaces(0);
-    addGModelToCompound(domain(),domainFaces);
+    addGModelToCompound(domain(),domainFaces,charLength);
     // add interface to compound gmodel
     std::vector<GFace*> interfaceFaces(0);
-    addGModelToCompound(interface(),interfaceFaces);
+    addGModelToCompound(interface(),interfaceFaces,[](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();});
     // add hole to compound gmodel (if present)
     std::vector<GFace*> holeFaces(0);
     if(hasHole())
-      addGModelToCompound(hole(),holeFaces);
+      addGModelToCompound(hole(),holeFaces,charLength);
     // add surface loops and volumes to compound gmodel
     std::vector<std::vector<GFace*>> outerSurfaceLoop({domainFaces,interfaceFaces});
     (compound()->addVolume(outerSurfaceLoop))->addPhysicalEntity(2);
@@ -283,7 +286,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces)
+  void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces,const std::function<double(const GVertex& vtx)>& charLength)
   {
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
@@ -308,7 +311,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
           vtxPtr[0]=edge->getBeginVertex();
           if(verticesMap[vtxPtr[0]->tag()]==-1)
           {
-            vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),vtxPtr[0]->prescribedMeshSizeAtVertex()));
+            vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charLength(*(vtxPtr[0]))));
             verticesMap[vtxPtr[0]->tag()]=vtxCounter;
             ++vtxCounter;
           }
@@ -317,7 +320,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
           vtxPtr[1]=edge->getEndVertex();
           if(verticesMap[vtxPtr[1]->tag()]==-1)
           {
-            vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),vtxPtr[1]->prescribedMeshSizeAtVertex()));
+            vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charLength(*(vtxPtr[1]))));
             verticesMap[vtxPtr[1]->tag()]=vtxCounter;
             ++vtxCounter;
           }
