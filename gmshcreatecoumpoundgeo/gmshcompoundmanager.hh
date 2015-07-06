@@ -16,8 +16,22 @@
 // mesh algorithms type
 enum GmshAlgorithmType {automatic=2,delaunay=5,frontal=6,meshadapt=1};
 
+// fixed charlength policy
+struct FixedCharlength
+{
+  template<typename... Args>
+  inline FixedCharlength(const Args&... )
+  {}
+
+  template<typename... Args>
+  inline double operator()(const GVertex& vtx,const Args&...) const
+  {
+    return vtx.prescribedMeshSizeAtVertex();
+  }
+};
+
 // base class
-template<unsigned int dim,typename Imp>
+template<unsigned int dim,typename CharlengthPolicyImp,typename Imp>
 class GMSHCompoundManagerBase
 {
   public:
@@ -46,12 +60,13 @@ class GMSHCompoundManagerBase
       hole()->readGEO(holefilename_);
       hashole_=true;
     }
-    imp().createCompoundGeo();
+    imp().createCompoundGeo(FixedCharlength());
     compound()->mesh(worlddim);
   }
 
   protected:
   typedef Imp Implementation;
+  typedef CharlengthPolicyImp CharlengthPolicyType;
 
   GMSHCompoundManagerBase(int argc,char** argv,const std::string& domainFileName,const std::string& interfaceFileName,
                           const std::string& holeFileName,const GmshAlgorithmType& algorithm,const bool& verbosity):
@@ -128,24 +143,33 @@ class GMSHCompoundManagerBase
 };
 
 // different specialization according to the dimension
-template<unsigned int dim>
+template<unsigned int dim,typename CharlengthPolicyType=FixedCharlength>
 class GMSHCompoundManager;
 
 // specialization for worlddim = 2
-template<>
-class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManager<2>>
+template<typename CharlengthPolicyType>
+class GMSHCompoundManager<2,CharlengthPolicyType>:
+  public GMSHCompoundManagerBase<2,CharlengthPolicyType,GMSHCompoundManager<2,CharlengthPolicyType>>
 {
 
-  friend GMSHCompoundManagerBase<2,GMSHCompoundManager<2>>;
+  friend GMSHCompoundManagerBase<2,CharlengthPolicyType,GMSHCompoundManager<2,CharlengthPolicyType>>;
+
+  typedef GMSHCompoundManagerBase<2,CharlengthPolicyType,GMSHCompoundManager<2,CharlengthPolicyType>> BaseType;
+  using BaseType::compound;
+  using BaseType::interface;
+  using BaseType::domain;
+  using BaseType::hole;
+  using BaseType::hasHole;
+  using BaseType::worlddim;
 
   public:
   template<typename... Args>
-  inline GMSHCompoundManager(Args... args):GMSHCompoundManagerBase(args...)
+  inline GMSHCompoundManager(Args... args):BaseType(args...)
   {}
 
   private:
-  void createCompoundGeo(const std::function<double(const GVertex& vtx)>& charLength=
-                                                                          [](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();})
+  template<typename... Args>
+  void createCompoundGeo(const Args&... args)
   {
     if(compound()!=nullptr)
       delete compound();
@@ -153,14 +177,14 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
     std::vector<GEdge*> domainEdges(0);
-    addGModelToCompound(domain(),domainEdges,charLength);
+    addGModelToCompound(domain(),domainEdges,args...);
     // add interface to compound gmodel
     std::vector<GEdge*> interfaceEdges(0);
-    addGModelToCompound(interface(),interfaceEdges,[](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();});
+    addGModelToCompound(interface(),interfaceEdges,FixedCharlength());
     // add hole to compound gmodel (if present)
     std::vector<GEdge*> holeEdges(0);
     if(hasHole())
-      addGModelToCompound(hole(),holeEdges,charLength);
+      addGModelToCompound(hole(),holeEdges,args...);
     // add line loops and faces to compound gmodel
     std::vector<std::vector<GEdge*>> outerLineLoop({domainEdges,interfaceEdges});
     (compound()->addPlanarFace(outerLineLoop))->addPhysicalEntity(2);
@@ -170,7 +194,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges,const std::function<double(const GVertex& vtx)>& charLength)
+  void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges,const std::function<double(const GVertex&)>& charlength)
   {
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
@@ -184,7 +208,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
       vtxPtr[0]=(*it)->getBeginVertex();
       if(verticesMap[vtxPtr[0]->tag()]==-1)
       {
-        vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charLength(*(vtxPtr[0]))));
+        vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charlength(*(vtxPtr[0]))));
         verticesMap[vtxPtr[0]->tag()]=vtxCounter;
         ++vtxCounter;
       }
@@ -193,7 +217,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
       vtxPtr[1]=(*it)->getEndVertex();
       if(verticesMap[vtxPtr[1]->tag()]==-1)
       {
-        vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charLength(*(vtxPtr[1]))));
+        vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charlength(*(vtxPtr[1]))));
         verticesMap[vtxPtr[1]->tag()]=vtxCounter;
         ++vtxCounter;
       }
@@ -214,7 +238,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
     unsigned int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
-    constexpr double charlenght(1000);
+    constexpr double charlength(1000);
     // add vertices
     for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
     {
@@ -223,7 +247,7 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
       {
         if(vtxPtr->getIndex()>(-1))
         {
-          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlength));
           verticesMap[i]=vtxCounter;
           ++vtxCounter;
         }
@@ -249,19 +273,28 @@ class GMSHCompoundManager<2>:public GMSHCompoundManagerBase<2,GMSHCompoundManage
 };
 
 // specialization for worlddim = 3
-template<>
-class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManager<3>>
+template<typename CharlengthPolicyType>
+class GMSHCompoundManager<3,CharlengthPolicyType>:
+  public GMSHCompoundManagerBase<3,CharlengthPolicyType,GMSHCompoundManager<3,CharlengthPolicyType>>
 {
-  friend GMSHCompoundManagerBase<3,GMSHCompoundManager<3>>;
+  friend GMSHCompoundManagerBase<3,CharlengthPolicyType,GMSHCompoundManager<3,CharlengthPolicyType>>;
+
+  typedef GMSHCompoundManagerBase<3,CharlengthPolicyType,GMSHCompoundManager<3,CharlengthPolicyType>> BaseType;
+  using BaseType::compound;
+  using BaseType::interface;
+  using BaseType::domain;
+  using BaseType::hole;
+  using BaseType::hasHole;
+  using BaseType::worlddim;
 
   public:
   template<typename... Args>
-  inline GMSHCompoundManager(Args... args):GMSHCompoundManagerBase(args...)
+  inline GMSHCompoundManager(Args... args):BaseType(args...)
   {}
 
   private:
-  void createCompoundGeo(const std::function<double(const GVertex& vtx)>& charLength=
-                                                                          [](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();})
+  template<typename... Args>
+  void createCompoundGeo(const Args&... args)
   {
     if(compound()!=nullptr)
       delete compound();
@@ -269,14 +302,14 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     compound()->setFactory("Gmsh");
     // add domain to compound gmodel
     std::vector<GFace*> domainFaces(0);
-    addGModelToCompound(domain(),domainFaces,charLength);
+    addGModelToCompound(domain(),domainFaces,args...);
     // add interface to compound gmodel
     std::vector<GFace*> interfaceFaces(0);
-    addGModelToCompound(interface(),interfaceFaces,[](const GVertex& vtx){return vtx.prescribedMeshSizeAtVertex();});
+    addGModelToCompound(interface(),interfaceFaces,FixedCharlength());
     // add hole to compound gmodel (if present)
     std::vector<GFace*> holeFaces(0);
     if(hasHole())
-      addGModelToCompound(hole(),holeFaces,charLength);
+      addGModelToCompound(hole(),holeFaces,args...);
     // add surface loops and volumes to compound gmodel
     std::vector<std::vector<GFace*>> outerSurfaceLoop({domainFaces,interfaceFaces});
     (compound()->addVolume(outerSurfaceLoop))->addPhysicalEntity(2);
@@ -286,7 +319,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces,const std::function<double(const GVertex& vtx)>& charLength)
+  void addGModelToCompound(GModel*& model,std::vector<GFace*>& faces,const std::function<double(const GVertex&)>& charlength)
   {
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
@@ -311,7 +344,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
           vtxPtr[0]=edge->getBeginVertex();
           if(verticesMap[vtxPtr[0]->tag()]==-1)
           {
-            vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charLength(*(vtxPtr[0]))));
+            vertices.push_back(compound()->addVertex(vtxPtr[0]->x(),vtxPtr[0]->y(),vtxPtr[0]->z(),charlength(*(vtxPtr[0]))));
             verticesMap[vtxPtr[0]->tag()]=vtxCounter;
             ++vtxCounter;
           }
@@ -320,7 +353,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
           vtxPtr[1]=edge->getEndVertex();
           if(verticesMap[vtxPtr[1]->tag()]==-1)
           {
-            vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charLength(*(vtxPtr[1]))));
+            vertices.push_back(compound()->addVertex(vtxPtr[1]->x(),vtxPtr[1]->y(),vtxPtr[1]->z(),charlength(*(vtxPtr[1]))));
             verticesMap[vtxPtr[1]->tag()]=vtxCounter;
             ++vtxCounter;
           }
@@ -351,7 +384,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
     std::vector<GVertex*> vertices(0);
     typedef std::list<GEdge*> EdgeList;
     std::vector<std::pair<int,EdgeList>> verticesMap(model->getMaxVertexNumber()+1,std::make_pair(0,EdgeList()));
-    constexpr double charlenght(1000);
+    constexpr double charlength(1000);
     // add vertices
     for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
     {
@@ -360,7 +393,7 @@ class GMSHCompoundManager<3>:public GMSHCompoundManagerBase<3,GMSHCompoundManage
       {
         if(vtxPtr->getIndex()>(-1))
         {
-          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlenght));
+          vertices.push_back(newGModel->addVertex(vtxPtr->x(),vtxPtr->y(),vtxPtr->z(),charlength));
           verticesMap[i].first=vtxCounter;
           ++vtxCounter;
         }
