@@ -34,7 +34,7 @@ int main(int argc,char** argv)
       qsub_script<<"#! /bin/bash"<<std::endl;
       qsub_script<<"#PBS -N "<<program_name<<std::endl;
       qsub_script<<"#PBS -m abe"<<std::endl;
-      qsub_script<<"#PBS -q ubuntu_standard"<<std::endl;
+      qsub_script<<"#PBS -q ubuntu"<<std::endl;
       qsub_script<<"#PBS -o /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"/"<<output_name<<".out"<<std::endl;
       qsub_script<<"#PBS -e /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"/"<<output_name<<".err"<<std::endl;
       qsub_script<<"mkdir -p /scratchcomp"<<output_node<<"/"<<user<<std::endl;
