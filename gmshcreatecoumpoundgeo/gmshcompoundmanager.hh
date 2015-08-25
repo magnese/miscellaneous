@@ -44,8 +44,7 @@ class GMSHCompoundManagerBase
     // load interface
     interface()=new GModel();
     interface()->setFactory("Gmsh");
-    auto found(interfacefilename_.find(".geo"));
-    if(found!=std::string::npos)
+    if(interfacefilename_.find(".geo")!=std::string::npos)
       interface()->readGEO(interfacefilename_);
     else
     {
@@ -196,10 +195,10 @@ class GMSHCompoundManager<2,CharlengthPolicyType>:
 
   void addGModelToCompound(GModel*& model,std::vector<GEdge*>& edges,const std::function<double(const GVertex&)>& charlength)
   {
-    unsigned int vtxCounter(0);
+    long int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,worlddim> vtxPtr;
-    std::vector<int> verticesMap(model->getNumVertices()+1,-1);
+    std::vector<long int> verticesMap(model->getNumVertices()+1,-1);
     for(auto it=model->firstEdge();it!=model->lastEdge();++it)
     {
       // get edge physical ID
@@ -235,9 +234,9 @@ class GMSHCompoundManager<2,CharlengthPolicyType>:
     newGModel->setFactory("Gmsh");
     // index all the mesh vertices in a continuous sequence starting at 1
     model->indexMeshVertices(true,0,true);
-    unsigned int vtxCounter(0);
+    long int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
-    std::vector<int> verticesMap(model->getMaxVertexNumber()+1,0);
+    std::vector<long int> verticesMap(model->getMaxVertexNumber()+1,0);
     constexpr double charlength(1000);
     // add vertices
     for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
@@ -254,7 +253,7 @@ class GMSHCompoundManager<2,CharlengthPolicyType>:
       }
     }
     // add edges
-    std::array<unsigned int,worlddim> posVtx;
+    std::array<long int,worlddim> posVtx;
     constexpr int physicalID(1);
     for(auto edgeIt=model->firstEdge();edgeIt!=model->lastEdge();++edgeIt)
     {
@@ -323,9 +322,9 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
   {
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
-    std::vector<int> verticesMap(model->getNumVertices()+1,-1);
-    unsigned int vtxCounter(0);
-    std::map<int,GEdge*> edgesMap;
+    std::vector<long int> verticesMap(model->getNumVertices()+1,-1);
+    long int vtxCounter(0);
+    std::map<long int,GEdge*> edgesMap;
     // loop over faces
     for(auto faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
@@ -333,7 +332,7 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
       const auto physicalID(((*faceIt)->getPhysicalEntities())[0]);
       auto edgesList((*faceIt)->edges());
       std::vector<GEdge*> edges(edgesList.size(),0);
-      unsigned int edgeCounter(0);
+      long int edgeCounter(0);
       // loop over edges
       for(auto& edge:edgesList)
       {
@@ -360,7 +359,7 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
           vtxPtr[1]=vertices[verticesMap[vtxPtr[1]->tag()]];
           // add edge
           edges[edgeCounter]=compound()->addLine(vtxPtr[0],vtxPtr[1]);
-          edgesMap.insert(std::pair<int,GEdge*>(edge->tag(),edges[edgeCounter]));
+          edgesMap.emplace(edge->tag(),edges[edgeCounter]);
         }
         else
           edges[edgeCounter]=edgeMapIt->second;
@@ -380,10 +379,10 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
     newGModel->setFactory("Gmsh");
     // index all the mesh vertices in a continuous sequence starting at 1
     model->indexMeshVertices(true,0,true);
-    unsigned int vtxCounter(0);
+    long int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
     typedef std::list<GEdge*> EdgeList;
-    std::vector<std::pair<int,EdgeList>> verticesMap(model->getMaxVertexNumber()+1,std::make_pair(0,EdgeList()));
+    std::vector<std::pair<long int,EdgeList>> verticesMap(model->getMaxVertexNumber()+1,std::make_pair(0,EdgeList()));
     constexpr double charlength(1000);
     // add vertices
     for(decltype(verticesMap.size()) i=1;i!=verticesMap.size();++i)
@@ -400,10 +399,10 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
       }
     }
     // add simplices
-    std::array<unsigned int,worlddim> idVtx;
+    std::array<long int,worlddim> idVtx;
     constexpr int physicalID(1);
     std::vector<GEdge*> simplexEdges(worlddim,nullptr);
-    std::map<int,GEdge*> edgesMap;
+    std::map<long int,GEdge*> edgesMap;
     for(auto faceIt=model->firstFace();faceIt!=model->lastFace();++faceIt)
     {
       for(decltype((*faceIt)->triangles.size()) i=0;i!=(*faceIt)->triangles.size();++i)
