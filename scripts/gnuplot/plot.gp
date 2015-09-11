@@ -1,17 +1,14 @@
-set autoscale
-unset log
-unset label
-set xtic auto
-set ytic auto
-set title "Title"
-set xlabel "x"
-set ylabel "y"
-set nokey
-plot "data.dat" with lines
-set term eps enhanced color solid
-set output "data.eps"
-replot
-set terminal epslatex color solid
-set output "data.tex"
-replot
-set term x11
+#!/usr/bin/gnuplot
+
+unset key
+
+set style data lines
+set grid ytics
+set grid xtics
+set term eps enhanced monochrome solid
+set output "out.ps"
+set title ""
+set xlabel ""
+set ylabel ""
+
+plot "data.dat"
