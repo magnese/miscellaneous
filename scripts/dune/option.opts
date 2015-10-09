@@ -1,21 +1,16 @@
-STDFLAGS="-O3 -Wall -DNDEBUG -funroll-loops -finline-functions -pthread"
+STDFLAGS="-O3 -Wall -funroll-loops -finline-functions"
 
 OPTIMFLAGS="$STDFLAGS -fomit-frame-pointer -ffast-math -mfpmath=sse -msse3"
 
-DEBUGFLAGS="-g -Wall"
-
-MODULEFLAGS="--with-alberta=$ALBERTA_DIR \
-             --with-zoltan=$ZOLTAN_DIR \
-             --with-ug=$UG_DIR \
-             --with-parmetis=$PARMETIS_DIR \
-             --with-metis=$METIS_DIR \
-             --with-petsc=$PETSC_DIR \
-             --with-umfpack-includedir=$SUITESPARSE_DIR/include \
-             --with-umfpack-libdir=$SUITESPARSE_DIR/lib "
+DEBUGFLAGS="-g -Wall -O0"
 
 COMPILER_FLAGS="CXX=g++ CC=gcc MPICXX=mpic++ MPICC=mpicc"
 
-CONFIGURE_FLAGS="--enable-parallel --enable-extra-utils --enable-experimental-grid-extensions \
-     $COMPILER_FLAGS CXXFLAGS=\"$OPTIMFLAGS\" $MODULEFLAGS"
-
-MAKE_FLAGS=
+CMAKE_FLAGS=" \
+-DCMAKE_CXX_FLAGS=\"$OPTIMFLAGS\" \
+-DCMAKE_PREFIX_PATH=\"$UG_DIR;$ALBERTA_DIR;$ZOLTAN_DIR;$PARMETIS_DIR;$PETSC_DIR\" \
+-DSUITESPARSE_ROOT=\"$SUITESPARSE_DIR\" \
+-DGMSH_ROOT=\"$GMSH_DIR\" \
+-DDUNE_GRID_EXPERIMENTAL_GRID_EXTENSIONS:BOOL=TRUE \
+-DDUNE_EXTRA_UTILS:BOOL=TRUE \
+"

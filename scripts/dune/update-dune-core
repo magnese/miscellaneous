@@ -1,0 +1,33 @@
+#! /bin/sh
+
+# Update DUNE core modules in $DUNE_DIR
+# Author: Marco Agnese (m.agnese13@imperial.ac.uk)
+
+echo "Pulling $DUNE_DIR/dune-common"
+cd $DUNE_DIR/dune-common
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-grid"
+cd $DUNE_DIR/dune-grid
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-localfunctions"
+cd $DUNE_DIR/dune-localfunctions
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-fem"
+cd $DUNE_DIR/dune-fem
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-geometry"
+cd $DUNE_DIR/dune-geometry
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-istl"
+cd $DUNE_DIR/dune-istl
+git pull
+git fetch -p --all
+echo "Pulling $DUNE_DIR/dune-alugrid"
+cd $DUNE_DIR/dune-alugrid
+git pull
+git fetch -p --all

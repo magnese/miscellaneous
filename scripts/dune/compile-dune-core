@@ -1,0 +1,7 @@
+#! /bin/sh
+
+# Compile DUNE core modules in $DUNE_DIR
+# Author: Marco Agnese (m.agnese13@imperial.ac.uk)
+
+rm -rf $DUNE_DIR/build
+$DUNE_DIR/dune-common/bin/dunecontrol --builddir=$DUNE_DIR/build --module=dune-fem --opts=$DUNE_DIR/option.opts all
