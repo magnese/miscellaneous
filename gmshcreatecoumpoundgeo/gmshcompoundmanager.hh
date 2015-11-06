@@ -162,7 +162,8 @@ class GMSHCompoundManager<2,CharlengthPolicyType>:
 
   public:
   template<typename... Args>
-  inline GMSHCompoundManager(Args&&... args):BaseType(args...)
+  inline GMSHCompoundManager(Args&&... args):
+    BaseType(args...)
   {}
 
   private:
@@ -190,7 +191,7 @@ class GMSHCompoundManager<2,CharlengthPolicyType>:
     (compound()->addPlanarFace(innerLineLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(std::shared_ptr<GModel>& model,std::vector<GEdge*>& edges,const std::function<double(const GVertex&)>& charlength)
+  void addGModelToCompound(std::shared_ptr<GModel>& model,std::vector<GEdge*>& edges,std::function<double(const GVertex&)>&& charlength)
   {
     long int vtxCounter(0);
     std::vector<GVertex*> vertices(0);
@@ -284,7 +285,8 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
 
   public:
   template<typename... Args>
-  inline GMSHCompoundManager(Args&&... args):BaseType(args...)
+  inline GMSHCompoundManager(Args&&... args):
+    BaseType(args...)
   {}
 
   private:
@@ -312,7 +314,7 @@ class GMSHCompoundManager<3,CharlengthPolicyType>:
     (compound()->addVolume(innerSurfaceLoop))->addPhysicalEntity(1);
   }
 
-  void addGModelToCompound(std::shared_ptr<GModel>& model,std::vector<GFace*>& faces,const std::function<double(const GVertex&)>& charlength)
+  void addGModelToCompound(std::shared_ptr<GModel>& model,std::vector<GFace*>& faces,std::function<double(const GVertex&)>&& charlength)
   {
     std::vector<GVertex*> vertices(0);
     std::array<GVertex*,2> vtxPtr({nullptr,nullptr});
