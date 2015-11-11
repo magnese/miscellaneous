@@ -4,12 +4,14 @@
 
 int main()
 {
-  typedef std::vector<short unsigned int> VectorType;
-  constexpr std::size_t n(3);
-  VectorType v(n,0);
-  for(std::size_t i=0;i!=n;++i)
-    v[i]=i+1;
-  permutation(v,0);
+  std::vector<short unsigned int> v(3,0);
+  short unsigned int val(1);
+  for(auto& entry:v)
+  {
+    entry=val;
+    ++val;
+  }
+  permutation(v);
 
   return 0;
 }

@@ -5,22 +5,18 @@
 #include <utility>
 
 template<typename T>
-void printVector(const T& v)
+void permutation(T v,std::size_t i=0)
 {
-  for(const auto& value: v)
-    std::cout<<value<<" ";
-  std::cout<<std::endl;
-}
-
-template<typename T>
-void permutation(T v,std::size_t i)
-{
-  const std::size_t size(v.size());
+  const auto size(v.size());
   if(i==size)
-    printVector(v);
+  {
+    for(const auto& value: v)
+      std::cout<<value<<" ";
+    std::cout<<std::endl;
+  }
   else
   {
-    for(std::size_t j=i;j!=size;++j)
+    for(auto j=i;j!=size;++j)
     {
       std::swap(v[i],v[j]);
       permutation(v,i+1);
