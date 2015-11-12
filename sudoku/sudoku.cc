@@ -1,8 +1,7 @@
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <array>
-#include <vector>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 template<typename T>
 void clear(T& s)
@@ -40,49 +39,62 @@ bool fill(T& s)
 template<typename T>
 void checkRows(T& s)
 {
-  for(auto i=0;i!=9;++i)
-  {
-    std::vector<int> temp(10,0);
-    for(auto j=0;j!=9;++j)
-      temp[s[i][j][0]]=1;
-    for(auto j=0;j!=9;++j)
-      for(auto k=1;k!=10;++k)
-        s[i][j][k]+=temp[k];
-  }
+  for(auto row=0;row!=9;++row)
+    for(auto col=0;col!=9;++col)
+    {
+      const auto pos(s[row][col][0]);
+      if(pos!=0)
+        for(auto i=0;i!=9;++i)
+          s[row][i][pos]=1;
+    }
 }
 
 template<typename T>
 void checkColumns(T& s)
 {
-  for(auto i=0;i!=9;++i)
-  {
-    std::vector<int> temp(10,0);
-    for(auto j=0;j!=9;++j)
-      temp[s[j][i][0]]=1;
-    for(auto j=0;j!=9;++j)
-      for(auto k=1;k!=10;++k)
-        s[j][i][k]+=temp[k];
-  }
+  for(auto col=0;col!=9;++col)
+    for(auto row=0;row!=9;++row)
+    {
+      const auto pos(s[row][col][0]);
+      if(pos!=0)
+        for(auto i=0;i!=9;++i)
+          s[i][col][pos]=1;
+    }
 }
 
 template<typename T>
 void checkSquares(T& s)
-{}
+{
+  for(auto srow=0;srow!=3;++srow)
+    for(auto scol=0;scol!=3;++scol)
+      for(auto row=srow*3;row!=(srow+1)*3;++row)
+        for(auto col=scol*3;col!=(scol+1)*3;++col)
+        {
+          const auto pos(s[row][col][0]);
+          if(pos!=0)
+            for(auto i=srow*3;i!=(srow+1)*3;++i)
+              for(auto j=scol*3;j!=(scol+1)*3;++j)
+                s[i][j][pos]=1;
+        }
+}
 
-int main()
+int main(int argc,char** argv)
 {
   //create sudoku structure
   std::array<std::array<std::array<int,10>,9>,9> sudoku;
 
   // read file containing sudoku to solve
-  std::string filename;
-  std::cout<<"Sudoku filename: ";
-  std::cin>>filename;
+  std::string filename("sudoku.dat");
+  if(argc>1)
+    filename=argv[1];
   std::ifstream inputFile(filename);
   if(inputFile.is_open())
+  {
+    std::cout<<"Sudoku read from file "<<filename<<std::endl;
     for(auto& row:sudoku)
       for(auto& entry:row)
         inputFile>>entry[0];
+  }
   else
   {
     std::cout<<"Impossibile to read sudoku from file "<<filename<<std::endl;
@@ -90,14 +102,15 @@ int main()
   }
 
   // solve sudoku
-  do
+  bool changed(true);
+  while(changed)
   {
     clear(sudoku);
     checkRows(sudoku);
     checkColumns(sudoku);
     checkSquares(sudoku);
-   }
-   while(fill(sudoku));
+    changed=fill(sudoku);
+  }
 
   // write solved sudoku
   filename="solved_"+filename;
