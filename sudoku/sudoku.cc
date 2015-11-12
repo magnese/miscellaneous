@@ -4,7 +4,7 @@
 #include <string>
 
 template<typename T>
-void clear(T& s)
+void init(T& s)
 {
   for(auto& row:s)
     for(auto& column:row)
@@ -101,11 +101,13 @@ int main(int argc,char** argv)
     return 1;
   }
 
+  // init sudoku
+  init(sudoku);
+
   // solve sudoku
   bool changed(true);
   while(changed)
   {
-    clear(sudoku);
     checkRows(sudoku);
     checkColumns(sudoku);
     checkSquares(sudoku);
