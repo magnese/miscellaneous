@@ -34,6 +34,35 @@ void finalize(T& s)
 }
 
 template<typename T>
+void fillUniquesRows(T& s,bool& changed)
+{
+  const auto size(s.size());
+  for(auto row=0;row!=size;++row)
+    for(auto entry=1;entry!=size+1;++entry)
+    {
+      int cont=0;
+      int pos=0;
+      for(auto col=0;(col!=size)&&(cont<2);++col)
+        if((s[row][col][0]==0)&&(s[row][col][entry]==0))
+        {
+          if(cont==0)
+          {
+            s[row][col][0]=entry;
+            ++cont;
+            pos=col;
+          }
+          else
+          {
+            s[row][pos][0]=0;
+            ++cont;
+          }
+        }
+      if(cont==1)
+        changed=true;
+    }
+}
+
+template<typename T>
 void fillRows(T& s,bool& changed)
 {
   const auto size(s.size());
@@ -48,6 +77,36 @@ void fillRows(T& s,bool& changed)
             s[row][i][pos]=1;
             changed=true;
           }
+    }
+  fillUniquesRows(s,changed);
+}
+
+template<typename T>
+void fillUniquesColumns(T& s,bool& changed)
+{
+  const auto size(s.size());
+  for(auto col=0;col!=size;++col)
+    for(auto entry=1;entry!=size+1;++entry)
+    {
+      int cont=0;
+      int pos=0;
+      for(auto row=0;(row!=size)&&(cont<2);++row)
+        if((s[row][col][0]==0)&&(s[row][col][entry]==0))
+        {
+          if(cont==0)
+          {
+            s[row][col][0]=entry;
+            ++cont;
+            pos=row;
+          }
+          else
+          {
+            s[pos][col][0]=0;
+            ++cont;
+          }
+        }
+      if(cont==1)
+        changed=true;
     }
 }
 
@@ -67,6 +126,7 @@ void fillColumns(T& s,bool& changed)
             changed=true;
           }
     }
+  fillUniquesColumns(s,changed);
 }
 
 template<typename T>
@@ -167,6 +227,7 @@ int main(int argc,char** argv)
   else
   {
     std::cout<<"Impossibile to write sudoku solution on file "<<filename<<std::endl;
+    print(sudoku);
     return 1;
   }
 
