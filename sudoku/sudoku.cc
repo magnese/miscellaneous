@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -14,15 +15,14 @@ void init(T& s)
 }
 
 template<typename T>
-bool fill(T& s)
+void finalize(T& s)
 {
-  bool changed(false);
   for(auto& row:s)
     for(auto& entry:row)
       if(entry[0]==0)
       {
         int cont(0);
-        for(int i=1;i!=10;++i)
+        for(int i=1;i!=entry.size();++i)
           if(entry[i]==0)
           {
             entry[0]=i;
@@ -30,58 +30,91 @@ bool fill(T& s)
           }
         if(cont>1)
           entry[0]=0;
-        else
-          changed=true;
       }
-  return changed;
 }
 
 template<typename T>
-void checkRows(T& s)
+void fillRows(T& s,bool& changed)
 {
-  for(auto row=0;row!=9;++row)
-    for(auto col=0;col!=9;++col)
+  const auto size(s.size());
+  for(auto row=0;row!=size;++row)
+    for(auto col=0;col!=size;++col)
     {
       const auto pos(s[row][col][0]);
       if(pos!=0)
-        for(auto i=0;i!=9;++i)
-          s[row][i][pos]=1;
+        for(auto i=0;i!=size;++i)
+          if(s[row][i][pos]==0)
+          {
+            s[row][i][pos]=1;
+            changed=true;
+          }
     }
 }
 
 template<typename T>
-void checkColumns(T& s)
+void fillColumns(T& s,bool& changed)
 {
-  for(auto col=0;col!=9;++col)
-    for(auto row=0;row!=9;++row)
+  const auto size(s.size());
+  for(auto col=0;col!=size;++col)
+    for(auto row=0;row!=size;++row)
     {
       const auto pos(s[row][col][0]);
       if(pos!=0)
-        for(auto i=0;i!=9;++i)
-          s[i][col][pos]=1;
+        for(auto i=0;i!=size;++i)
+          if(s[i][col][pos]==0)
+          {
+            s[i][col][pos]=1;
+            changed=true;
+          }
     }
 }
 
 template<typename T>
-void checkSquares(T& s)
+void fillSquares(T& s,bool& changed)
 {
-  for(auto srow=0;srow!=3;++srow)
-    for(auto scol=0;scol!=3;++scol)
-      for(auto row=srow*3;row!=(srow+1)*3;++row)
-        for(auto col=scol*3;col!=(scol+1)*3;++col)
+  const auto size(static_cast<int>(sqrt(s.size())));
+  for(auto srow=0;srow!=size;++srow)
+    for(auto scol=0;scol!=size;++scol)
+      for(auto row=srow*size;row!=(srow+1)*size;++row)
+        for(auto col=scol*size;col!=(scol+1)*size;++col)
         {
           const auto pos(s[row][col][0]);
           if(pos!=0)
-            for(auto i=srow*3;i!=(srow+1)*3;++i)
-              for(auto j=scol*3;j!=(scol+1)*3;++j)
-                s[i][j][pos]=1;
+            for(auto i=srow*size;i!=(srow+1)*size;++i)
+              for(auto j=scol*size;j!=(scol+1)*size;++j)
+                if(s[i][j][pos]==0)
+                {
+                  s[i][j][pos]=1;
+                  changed=true;
+                }
         }
+}
+
+template<typename T>
+void print(const T& s)
+{
+  const auto size(s.size());
+  const auto squareSize(static_cast<int>(sqrt(size)));
+  for(auto row=0;row!=size;++row)
+  {
+    if(row%squareSize==0)
+      std::cout<<std::endl;
+    for(auto col=0;col!=size;++col)
+    {
+      if(col%squareSize==0)
+        std::cout<<" ";
+      std::cout<<s[row][col][0]<<" ";
+    }
+    std::cout<<std::endl;
+  }
+  std::cout<<std::endl;
 }
 
 int main(int argc,char** argv)
 {
   //create sudoku structure
-  std::array<std::array<std::array<int,10>,9>,9> sudoku;
+  constexpr int size(9);
+  std::array<std::array<std::array<int,size+1>,size>,size> sudoku;
 
   // read file containing sudoku to solve
   std::string filename("sudoku.dat");
@@ -94,6 +127,7 @@ int main(int argc,char** argv)
     for(auto& row:sudoku)
       for(auto& entry:row)
         inputFile>>entry[0];
+    print(sudoku);
   }
   else
   {
@@ -105,14 +139,16 @@ int main(int argc,char** argv)
   init(sudoku);
 
   // solve sudoku
-  bool changed(true);
-  while(changed)
+  bool changed;
+  do
   {
-    checkRows(sudoku);
-    checkColumns(sudoku);
-    checkSquares(sudoku);
-    changed=fill(sudoku);
+    changed=false;
+    fillRows(sudoku,changed);
+    fillColumns(sudoku,changed);
+    fillSquares(sudoku,changed);
+    finalize(sudoku);
   }
+  while(changed);
 
   // write solved sudoku
   filename="solved_"+filename;
@@ -126,6 +162,7 @@ int main(int argc,char** argv)
       outputFile<<std::endl;
     }
     std::cout<<"Sudoku solution written on file "<<filename<<std::endl;
+    print(sudoku);
   }
   else
   {
