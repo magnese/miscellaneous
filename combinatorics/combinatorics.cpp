@@ -16,7 +16,11 @@ int main()
 
   // permutations
   std::cout<<"Permuations :"<<std::endl;
-  permutation(v);
+  permutations(v);
+
+  // combinations
+  std::cout<<"Combinations :"<<std::endl;
+  combinations(v,3);
 
   return 0;
 }
