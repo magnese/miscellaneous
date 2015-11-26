@@ -27,22 +27,23 @@ void permutations(T v,std::size_t l=0)
 }
 
 template<typename T>
-void combinations(T v,std::size_t n,std::size_t l=0)
+void combinations(T pool,std::size_t n,T comb={})
 {
-  if(l==n)
+  if(n==0)
   {
-    for(std::size_t i=0;i!=n;++i)
-      std::cout<<v[i]<<" ";
+    for(const auto& value:comb)
+      std::cout<<value<<" ";
     std::cout<<std::endl;
   }
   else
   {
-    const auto size(v.size());
-    for(auto i=l;i!=size;++i)
+    for(auto it=pool.begin();it!=(pool.end()-n+1);++it)
     {
-      auto vnew(v);
-      std::copy_n(v.begin()+i,size-i,vnew.begin()+l);
-      combinations(vnew,n,l+1);
+      comb.push_back(*it);
+      T newpool(pool.end()-it-1);
+      std::copy(it+1,pool.end(),newpool.begin());
+      combinations(newpool,n-1,comb);
+      comb.pop_back();
     }
   }
 }
