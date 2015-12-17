@@ -7,8 +7,8 @@
 
 void rf(int &n)
 {
-	for(int i=0;i<1000000000;++i)
-		++n;
+  for(int i=0;i<1000000000;++i)
+    ++n;
 }
 
 template<typename T>
@@ -19,23 +19,23 @@ void test(T& x0,T& x1,std::string&& name)
   std::cout<<"&x0 =  "<<(long long int)(&x0)<<std::endl;
   std::cout<<"&x1 = "<<(long long int)(&x1)<<std::endl;
   std::cout<<"(&x1 - &x2) = "<<&x1-&x0<<" bytes"<<std::endl;
-	// single execution
+  // single execution
   x0=0;
-	auto start=std::chrono::system_clock::now();
-	std::thread t(rf,std::ref(x0));
-	t.join();
-	auto end=std::chrono::system_clock::now();
-	std::cout<<"Single thread time: "<< std::chrono::duration<double>(end-start).count()<<std::endl;
-	// double execution
+  auto start=std::chrono::system_clock::now();
+  std::thread t(rf,std::ref(x0));
+  t.join();
+  auto end=std::chrono::system_clock::now();
+  std::cout<<"Single thread time: "<< std::chrono::duration<double>(end-start).count()<<std::endl;
+  // double execution
   x0=0;
   x1=0;
-	start=std::chrono::system_clock::now();
-	std::thread t1(rf,std::ref(x0));
-	std::thread t2(rf,std::ref(x1));
-	t1.join();
-	t2.join();
-	end=std::chrono::system_clock::now();
-	std::cout << "Double thread time: " <<std::chrono::duration<double>(end-start).count()<<std::endl<<std::endl;
+  start=std::chrono::system_clock::now();
+  std::thread t1(rf,std::ref(x0));
+  std::thread t2(rf,std::ref(x1));
+  t1.join();
+  t2.join();
+  end=std::chrono::system_clock::now();
+  std::cout << "Double thread time: " <<std::chrono::duration<double>(end-start).count()<<std::endl<<std::endl;
 }
 
 int main()
