@@ -1,0 +1,7 @@
+project(GoogleHash2016)
+cmake_minimum_required(VERSION 2.8)
+aux_source_directory(. SRC_LIST)
+set(TARGET_H functions.hh)
+set(TARGET_SRC functions.cpp sort.cpp)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
+list(APPEND CMAKE_CXX_FLAGS "-Wall -pedantic -pthread -O3 -std=c++11" ${CMAKE_CXX_FLAGS})
