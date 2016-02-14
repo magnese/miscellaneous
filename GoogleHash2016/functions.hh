@@ -12,9 +12,10 @@ enum DroneCommand {LOAD, UNLOAD, WAIT, DELIVER};
 extern unsigned int totalCommands;
 extern std::vector<std::vector<unsigned int>> orders;
 extern std::vector<std::vector<unsigned int>> warehouses;
+struct Drone;
 
-void OutputCommands(const std::string& filename);
-void GenerateCommands();
+bool ApplyNextOrder(Drone& drone);
+void OutputCommands(const std::vector<Drone>& drones,const std::string& filename);
 std::vector<unsigned int> generate_weights(std::vector<std::vector<unsigned int>>& orders,
                                            std::vector<std::vector<unsigned int>>& warehouses,
                                            std::vector<unsigned int>& product_weights);
@@ -24,26 +25,10 @@ long long Partition(std::vector<std::tuple<unsigned int, unsigned int>>& in, lon
 void ApplyQuickSort(std::vector<std::tuple<unsigned int, unsigned int>>& in, long long lo, long long hi);
 void ApplyQuickSortMT(std::vector<std::tuple<unsigned int, unsigned int>>& in, long long lo, long long hi);
 
-using namespace std;
-
-struct Warehouse
-{
-  Warehouse(const vector<unsigned int>& warehouseData) :x(warehouseData[0]), y(warehouseData[1]) {
-    auto first = warehouseData.begin() + 2;
-    auto last = warehouseData.end();
-    currentStock = vector<unsigned int>(first, last);
-  }
-  void Reserve(unsigned int prodIdx, unsigned int count) {
-    currentStock[prodIdx] -= count;
-  }
-  unsigned int x, y;
-  vector<unsigned int> currentStock;
-};
-
 struct Drone
 {
   Drone():currentTime(0), X(warehouses[0][0]),Y(warehouses[0][1]) {};
-  ~Drone(){};
+
   bool isAvailable(unsigned int currentT) { return(currentT >= currentTime); };
   void AddCommand(DroneCommand comm, unsigned int val1, unsigned int val2, unsigned int val3) {
     commands.push_back({ static_cast<unsigned int>(comm),val1,val2,val3 });
@@ -71,7 +56,7 @@ struct Drone
       break;
     }
   }
-  list<array<unsigned int, 4>> commands;
+  std::list<std::array<unsigned int, 4>> commands;
   unsigned int currentTime;
   unsigned int X, Y;
 };

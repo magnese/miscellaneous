@@ -9,23 +9,17 @@
 
 using namespace std;
 
-extern vector<list<array<unsigned int, 4>>> drones;
 extern vector<vector<unsigned int>> orders;
 extern vector<vector<unsigned int>> warehouses;
 extern vector<unsigned int> productWeights;
 extern unsigned int numDrones;
-extern unsigned int numOrders;
 extern unsigned int numTurns;
-extern unsigned int numProducts;
 extern unsigned int numWarehouses;
 extern unsigned int maxPayload;
 extern unsigned int score;
 unsigned int totalCommands;
-extern vector<list<array<unsigned int, 4>>> drones;
-extern vector<Warehouse> warehouseInventory;
-extern vector<Drone> droneSwarm;
 
-void OutputCommands(const std::string& filename)
+void OutputCommands(const std::vector<Drone>& drones,const std::string& filename)
 {
   std::map<unsigned int, char> CommandToOutput;
   CommandToOutput[DroneCommand::LOAD] = 'L';
@@ -38,7 +32,7 @@ void OutputCommands(const std::string& filename)
   for (unsigned int droneIndex = 0; droneIndex < drones.size(); ++droneIndex)
   {
     // I am looking at drone elem. Elem is a list of commands to this drone.
-    for (auto& command : drones[droneIndex])
+    for (const auto& command : drones[droneIndex].commands)
     {
       file << droneIndex << " ";
       file << CommandToOutput[command[0]] << " ";
@@ -53,7 +47,7 @@ void OutputCommands(const std::string& filename)
   }
 }
 
-inline bool generate_weights(vector< unsigned int >& orders_scores,
+bool generate_weights(vector< unsigned int >& orders_scores,
   vector< vector< unsigned int > >& orders_nearest_warehouses,
   const vector< vector< unsigned int > > & orders,
   const vector< vector< unsigned int > > & warehouses,
@@ -87,7 +81,7 @@ inline bool generate_weights(vector< unsigned int >& orders_scores,
         while ((!found) && warehouse_idx < numWarehouses) { // TODO: TERMINATOR
           chosen_warehouse = sorted_warehouse_indices[warehouse_idx];
           // is there enough stock in the chosen warehouse?
-          if (warehouseInventory[chosen_warehouse].currentStock[prod_idx] >= desired) {
+          if (warehouses[chosen_warehouse][prod_idx+2] >= desired) {
             found = true;
           }
           else {
@@ -106,7 +100,7 @@ inline bool generate_weights(vector< unsigned int >& orders_scores,
   return true;
 }
 
-inline bool ApplyNextOrder(const unsigned int droneIdx) {
+bool ApplyNextOrder(Drone& drone) {
   //////////////////////////////////////
   // Retrieve next order
   vector<unsigned int> orderWeights;
@@ -136,7 +130,7 @@ inline bool ApplyNextOrder(const unsigned int droneIdx) {
       {
         unsigned int desired = orders[currentOrder][prodIdx + 3];
 
-        (warehouseInventory[warehousesNeeded[currentOrder][prodIdx]]).Reserve(prodIdx, desired);
+        warehouses[warehousesNeeded[currentOrder][prodIdx]][prodIdx+2]-=desired;
         // how many can I carry at a time?
         unsigned int trips;
         if((productWeights[prodIdx] * desired) % maxPayload)
@@ -147,39 +141,14 @@ inline bool ApplyNextOrder(const unsigned int droneIdx) {
         unsigned int remaining = desired;
         for (unsigned int trip = 0; trip < trips; ++trip)
         {
-          droneSwarm[droneIdx].AddCommand(DroneCommand::LOAD, warehousesNeeded[currentOrder][prodIdx], prodIdx, min(remaining,maxPerTrip));
-          droneSwarm[droneIdx].AddCommand(DroneCommand::DELIVER, currentOrder, prodIdx, min(remaining, maxPerTrip));
+          drone.AddCommand(DroneCommand::LOAD, warehousesNeeded[currentOrder][prodIdx], prodIdx, min(remaining,maxPerTrip));
+          drone.AddCommand(DroneCommand::DELIVER, currentOrder, prodIdx, min(remaining, maxPerTrip));
         }
       }
     }
-    if (droneSwarm[droneIdx].currentTime < numTurns)
-      score += (100 * (numTurns - droneSwarm[droneIdx].currentTime)) / numTurns; // add a score for this delivery
+    if (drone.currentTime < numTurns)
+      score += (100 * (numTurns - drone.currentTime)) / numTurns; // add a score for this delivery
     orders[currentOrder][0] = 1;
   }
   return true;
-}
-
-void GenerateCommands() {
-  // Set up trackers
-  // Set up warehouses
-  score = 0;
-  totalCommands = 0;
-  droneSwarm.resize(numDrones);
-  warehouseInventory.clear();
-  for (auto & elem : warehouses)
-  {
-    warehouseInventory.push_back(Warehouse(elem));
-  }
-  bool success = true;
-  for (unsigned int t = 0; t < numTurns; ++t)
-  {
-    for (unsigned int j = 0; j < numDrones; ++j)
-      if (droneSwarm[j].isAvailable(t))
-      {
-        success = ApplyNextOrder(j);
-        if (!success)
-          return;
-      }
-    cout << t << endl;
-  }
 }

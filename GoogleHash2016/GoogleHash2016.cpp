@@ -22,9 +22,6 @@ unsigned int numWarehouses;
 unsigned int numOrders;
 unsigned int numItems;
 unsigned int score;
-std::vector<std::list<std::array<unsigned int,4>>> drones;
-std::vector<Warehouse> warehouseInventory;
-std::vector<Drone> droneSwarm;
 
 int main(int argc, char** argv)
 {
@@ -84,16 +81,23 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  GenerateCommands();
+  // create variables
+  score = 0;
+  totalCommands = 0;
+  std::vector<Drone> droneSwarm(numDrones);
 
-  // populate output list
-  drones.clear();
-  for (unsigned int j = 0; j < droneSwarm.size(); ++j)
+  // generate commands
+  bool success(true);
+  for (unsigned int t = 0; (t < numTurns) && success; ++t)
   {
-    drones.push_back(droneSwarm[j].commands);
+    for (auto droneIt=droneSwarm.begin();(droneIt!=droneSwarm.end()) && success; ++droneIt)
+      if (droneIt->isAvailable(t))
+        success = ApplyNextOrder(*droneIt);
+    std::cout << t << std::endl;
   }
 
-  OutputCommands("solution.out");
+  // dump on file
+  OutputCommands(droneSwarm,"solution.out");
 
   std::cout << score << std::endl;
 
