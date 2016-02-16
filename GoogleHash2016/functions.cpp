@@ -14,7 +14,7 @@ extern std::vector<unsigned int> productWeights;
 extern unsigned int numTurns;
 extern unsigned int maxPayload;
 extern unsigned int score;
-unsigned int totalCommands;
+extern unsigned int totalCommands;
 
 void OutputCommands(const std::vector<Drone>& drones,const std::string& filename)
 {

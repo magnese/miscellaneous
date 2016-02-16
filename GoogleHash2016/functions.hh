@@ -8,19 +8,14 @@
 enum DroneCommand {LOAD, UNLOAD, WAIT, DELIVER};
 
 extern unsigned int totalCommands;
-extern std::vector<std::vector<unsigned int>> orders;
-extern std::vector<std::vector<unsigned int>> warehouses;
-struct Drone;
 
-bool ApplyNextOrder(Drone& drone);
-void OutputCommands(const std::vector<Drone>& drones,const std::string& filename);
 unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned int y1);
-
 
 struct Drone
 {
-  Drone():
-    currentTime(0), X(warehouses[0][0]),Y(warehouses[0][1])
+  Drone(const std::vector<std::vector<unsigned int>>& orders,
+        const std::vector<std::vector<unsigned int>>& warehouses):
+    orders_(orders),warehouses_(warehouses),currentTime(0), X(warehouses_[0][0]),Y(warehouses_[0][1])
   {};
 
   bool isAvailable(unsigned int currentT)
@@ -34,10 +29,10 @@ struct Drone
     switch (comm)
     {
       case DroneCommand::DELIVER:
-        currentTime += distance(X,Y,orders[val1][1],orders[val1][2]) + 1;
+        currentTime += distance(X,Y,orders_[val1][1],orders_[val1][2]) + 1;
         break;
       case DroneCommand::LOAD:
-        currentTime += distance(X,Y,warehouses[val1][0],warehouses[val1][1]) + 1;
+        currentTime += distance(X,Y,warehouses_[val1][0],warehouses_[val1][1]) + 1;
         break;
       case DroneCommand::UNLOAD:
         break;
@@ -45,9 +40,16 @@ struct Drone
         break;
     }
   }
+
+  const std::vector<std::vector<unsigned int>>& orders_;
+  const std::vector<std::vector<unsigned int>>& warehouses_;
   std::list<std::array<unsigned int, 4>> commands;
   unsigned int currentTime;
-  unsigned int X, Y;
+  unsigned int X;
+  unsigned int Y;
 };
+
+bool ApplyNextOrder(Drone& drone);
+void OutputCommands(const std::vector<Drone>& drones,const std::string& filename);
 
 #endif

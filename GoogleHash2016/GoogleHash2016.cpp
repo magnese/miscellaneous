@@ -12,19 +12,22 @@
 std::vector<std::vector<unsigned int>> warehouses;
 std::vector<std::vector<unsigned int>> orders;
 std::vector<unsigned int> productWeights;
-unsigned int numRows;
-unsigned int numColumns;
-unsigned int numDrones;
 unsigned int numTurns;
 unsigned int maxPayload;
-unsigned int numProducts;
-unsigned int numWarehouses;
-unsigned int numOrders;
-unsigned int numItems;
 unsigned int score;
+unsigned int totalCommands;
 
 int main(int argc, char** argv)
 {
+  // create variables
+  unsigned int numRows;
+  unsigned int numColumns;
+  unsigned int numDrones;
+  unsigned int numProducts;
+  unsigned int numWarehouses;
+  unsigned int numOrders;
+  unsigned int numItems;
+
   // read from file
   std::string filename("busy_day.in");
   if (argc>1)
@@ -84,7 +87,7 @@ int main(int argc, char** argv)
   // create variables
   score = 0;
   totalCommands = 0;
-  std::vector<Drone> droneSwarm(numDrones);
+  std::vector<Drone> droneSwarm(numDrones,Drone(orders,warehouses));
 
   // generate commands
   bool success(true);
