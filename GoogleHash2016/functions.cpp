@@ -45,9 +45,24 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
 }
 
 void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list<std::vector<unsigned int>>& orders,
-                const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights)
+                const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights,
+                unsigned int maxPayload)
 {
   warehousesNeeded.clear();
+
+  // clear empty orders
+  for(auto orderIt=orders.begin();orderIt!=orders.end();++orderIt)
+  {
+    bool isEmpty(true);
+    for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
+      if((*orderIt)[prodIdx+4]>0)
+      {
+        isEmpty=false;
+        break;
+      }
+    if(isEmpty)
+      orderIt=orders.erase(orderIt);
+  }
 
   // calculate score for each order
   for(auto& order:orders)
@@ -59,34 +74,40 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
     std::vector<unsigned int> warehouseNeeded(productWeights.size()+1,std::numeric_limits<unsigned int>::max());
 
     // calculate the distance from order i to each warehouse
-    std::vector<std::array<unsigned int,2>> warehouse_distances(warehouses.size(),{0,0});
-    for(unsigned int warehouse_idx= 0;warehouse_idx!=warehouses.size();++warehouse_idx)
+    std::vector<std::array<unsigned int,2>> warehouseDistances(warehouses.size(),{0,0});
+    for(unsigned int warehouseIdx= 0;warehouseIdx!=warehouses.size();++warehouseIdx)
     {
-      warehouse_distances[warehouse_idx][0]=warehouse_idx;
-      warehouse_distances[warehouse_idx][1]=distance(order[1],order[2],warehouses[warehouse_idx][0],warehouses[warehouse_idx][1]);
+      warehouseDistances[warehouseIdx][0]=warehouseIdx;
+      warehouseDistances[warehouseIdx][1]=distance(order[1],order[2],warehouses[warehouseIdx][0],warehouses[warehouseIdx][1]);
     }
 
     // sort warehouse distances
-    std::sort(warehouse_distances.begin(),warehouse_distances.end(),
+    std::sort(warehouseDistances.begin(),warehouseDistances.end(),
       [](const std::array<unsigned int,2>& a,const std::array<unsigned int,2>& b){return a[1]<b[1];});
 
-    for(unsigned int prod_idx=0;prod_idx!=productWeights.size();++prod_idx)
+    for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
     {
-      // does the order need product prod_idx?
-      if(order[prod_idx+4]>0)
+      // does the order need product prodIdx?
+      if(order[prodIdx+4]>0)
       {
-        // find nearest warehouse with enough product prod_idx
-        const auto desired=order[prod_idx+4];
+        // find nearest warehouse with enough product prodIdx
+        const auto desired(order[prodIdx+4]);
         bool found(false);
         unsigned int warehouseIdx;
-        unsigned int distance;
-        for(const auto& entry:warehouse_distances)
+        unsigned int score;
+        for(const auto& entry:warehouseDistances)
         {
           warehouseIdx=entry[0];
           // is there enough stock in the chosen warehouse?
-          if(warehouses[warehouseIdx][prod_idx+2]>=desired)
+          if(warehouses[warehouseIdx][prodIdx+2]>=desired)
           {
-            distance=entry[1];
+            // score is distance*(2*trips-1) since you need to come back to retrive the stuff
+            unsigned int trips;
+            if((productWeights[prodIdx]*desired)%maxPayload)
+              trips=(productWeights[prodIdx]*desired)/maxPayload+1;
+            else
+              trips=(productWeights[prodIdx]*desired)/maxPayload;
+            score=entry[1]*(2*trips-1);
             found=true;
             break;
           }
@@ -97,8 +118,8 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
           continue;
         }
         if(order[3]!=std::numeric_limits<unsigned int>::max())
-          order[3]+=distance;
-        warehouseNeeded[prod_idx+1]=warehouseIdx;
+          order[3]+=score;
+        warehouseNeeded[prodIdx+1]=warehouseIdx;
       }
     }
     // assign the same score so it will be sorted as orders
@@ -117,7 +138,7 @@ bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,st
 {
   // find next order
   std::list<std::vector<unsigned int>> warehousesNeeded;
-  sortOrders(warehousesNeeded,orders,warehouses,productWeights);
+  sortOrders(warehousesNeeded,orders,warehouses,productWeights,maxPayload);
 
   if(orders.size()==0)
     return false;
@@ -125,30 +146,42 @@ bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,st
   auto& order(orders.front());
   auto& warehouseNeeded(warehousesNeeded.front());
 
+  // list of commands to execute
+  std::list<std::array<unsigned int,3>> loadCommands;
+  std::list<std::array<unsigned int,3>> deliverCommands;
+
   // loop over products
-  for (unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
+  auto residualPayload(maxPayload);
+  unsigned int prodIdx(0);
+  for(;prodIdx!=productWeights.size();++prodIdx)
   {
     // do I need this product?
-    if (order[prodIdx + 4] > 0)
+    if((order[prodIdx+4]>0)&&(residualPayload>=productWeights[prodIdx]))
     {
-      auto desired=order[prodIdx+4];
-      warehouses[warehouseNeeded[prodIdx+1]][prodIdx+2]-=desired;
-      // how many can I carry at a time?
+      // compute number of trips needed
+      auto desired(order[prodIdx+4]);
       unsigned int trips;
-      if((productWeights[prodIdx]*desired)%maxPayload)
-        trips=(productWeights[prodIdx]*desired)/maxPayload+1;
+      if((productWeights[prodIdx]*desired)%residualPayload)
+        trips=(productWeights[prodIdx]*desired)/residualPayload+1;
       else
-        trips=(productWeights[prodIdx]*desired)/maxPayload;
-      unsigned int maxPerTrip=maxPayload/productWeights[prodIdx];
-      unsigned int remaining=desired;
-      for (unsigned int trip=0;trip!=trips;++trip)
-      {
-        drone.AddCommand(DroneCommand::LOAD,warehouseNeeded[prodIdx+1],prodIdx,std::min(remaining,maxPerTrip),totalCommands);
-        drone.AddCommand(DroneCommand::DELIVER,order[0],prodIdx,std::min(remaining,maxPerTrip),totalCommands);
-      }
+        trips=(productWeights[prodIdx]*desired)/residualPayload;
+      // reserve maximum loadable quantities
+      if(trips>1)
+        desired=residualPayload/productWeights[prodIdx];
+      residualPayload-=desired*productWeights[prodIdx];
+      warehouses[warehouseNeeded[prodIdx+1]][prodIdx+2]-=desired;
+      order[prodIdx+4]-=desired;
+      // store commands
+      loadCommands.push_back({warehouseNeeded[prodIdx+1],prodIdx,desired});
+      deliverCommands.push_back({order[0],prodIdx,desired});
     }
   }
-  orders.pop_front();
+
+  // add commands to drone
+  for(const auto& command:loadCommands)
+    drone.AddLoadCommand(command[0],command[1],command[2],totalCommands);
+  for(const auto& command:deliverCommands)
+    drone.AddDeliverCommand(command[0],command[1],command[2],totalCommands);
 
   return true;
 }

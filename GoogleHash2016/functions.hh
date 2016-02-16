@@ -19,34 +19,27 @@ struct Drone
   {
     return currentT>=currentTime;
   };
-  void AddCommand(DroneCommand comm,unsigned int val1,unsigned int val2,unsigned int val3,unsigned int& totalCommands)
+
+  void AddLoadCommand(unsigned int val1,unsigned int val2,unsigned int val3,unsigned int& totalCommands)
   {
-    commands.push_back({static_cast<unsigned int>(comm),val1,val2,val3});
+    commands.push_back({static_cast<unsigned int>(DroneCommand::LOAD),val1,val2,val3});
     ++totalCommands;
-    switch (comm)
+    currentTime+=distance(X,Y,warehouses_[val1][0],warehouses_[val1][1])+1;
+  }
+  void AddDeliverCommand(unsigned int val1,unsigned int val2,unsigned int val3,unsigned int& totalCommands)
+  {
+    commands.push_back({static_cast<unsigned int>(DroneCommand::DELIVER),val1,val2,val3});
+    ++totalCommands;
+    bool found(false);
+    auto orderIt=orders_.begin();
+    while(!found)
     {
-      case DroneCommand::DELIVER:
-      {
-        bool found(false);
-        auto orderIt=orders_.begin();
-        while(!found)
-        {
-          if((*orderIt)[0]==val1)
-            found=true;
-          else
-            ++orderIt;
-        }
-        currentTime+=distance(X,Y,(*orderIt)[1],(*orderIt)[2])+1;
-        break;
-      }
-      case DroneCommand::LOAD:
-        currentTime+=distance(X,Y,warehouses_[val1][0],warehouses_[val1][1])+1;
-        break;
-      case DroneCommand::UNLOAD:
-        break;
-      case DroneCommand::WAIT:
-        break;
+      if((*orderIt)[0]==val1)
+        found=true;
+      else
+        ++orderIt;
     }
+    currentTime+=distance(X,Y,(*orderIt)[1],(*orderIt)[2])+1;
   }
 
   const std::list<std::vector<unsigned int>>& orders_;

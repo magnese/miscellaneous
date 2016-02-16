@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     for(auto droneIt=droneSwarm.begin();(droneIt!=droneSwarm.end())&&success;++droneIt)
       if(droneIt->isAvailable(t))
         success = ApplyNextOrder(*droneIt,orders,warehouses,productWeights,totalCommands,maxPayload);
-    std::cout<<"t = "<<t<<std::endl;
+    std::cout<<"t = "<<t<<" (remaining orders = "<<orders.size()<<")"<<std::endl;
   }
 
   // dump on file
