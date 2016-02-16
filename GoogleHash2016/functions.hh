@@ -25,6 +25,8 @@ struct Drone
     commands.push_back({static_cast<unsigned int>(DroneCommand::LOAD),val1,val2,val3});
     ++totalCommands;
     currentTime+=distance(X,Y,warehouses_[val1][0],warehouses_[val1][1])+1;
+    X=warehouses_[val1][0];
+    Y=warehouses_[val1][1];
   }
   void AddDeliverCommand(unsigned int val1,unsigned int val2,unsigned int val3,unsigned int& totalCommands)
   {
@@ -40,6 +42,8 @@ struct Drone
         ++orderIt;
     }
     currentTime+=distance(X,Y,(*orderIt)[1],(*orderIt)[2])+1;
+    X=(*orderIt)[1];
+    Y=(*orderIt)[2];
   }
 
   const std::list<std::vector<unsigned int>>& orders_;
