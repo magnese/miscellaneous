@@ -1,11 +1,13 @@
 #include <algorithm>
-#include <vector>
-#include <array>
-#include <math.h>
-#include <list>
-#include <map>
 #include <fstream>
 #include <iostream>
+#include <array>
+#include <limits>
+#include <list>
+#include <map>
+#include <math.h>
+#include <vector>
+
 #include "functions.hh"
 
 void OutputCommands(const std::vector<Drone>& drones,const std::string& filename,unsigned int totalCommands)
@@ -54,7 +56,7 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
     order[3]=0;
 
     // create warehouse needed
-    std::vector<unsigned int> warehouseNeeded(productWeights.size()+1,-1);
+    std::vector<unsigned int> warehouseNeeded(productWeights.size()+1,std::numeric_limits<unsigned int>::max());
 
     // calculate the distance from order i to each warehouse
     std::vector<std::array<unsigned int,2>> warehouse_distances(warehouses.size(),{0,0});
@@ -91,10 +93,11 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
         }
         if(!found)
         {
-          order[3]=-1;
+          order[3]=std::numeric_limits<unsigned int>::max();
           continue;
         }
-        order[3]+=distance;
+        if(order[3]!=std::numeric_limits<unsigned int>::max())
+          order[3]+=distance;
         warehouseNeeded[prod_idx+1]=warehouseIdx;
       }
     }
