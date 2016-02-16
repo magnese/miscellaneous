@@ -50,7 +50,7 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
   return static_cast<unsigned int>(sqrt(pow(dx,2)+pow(dy,2))+0.99999999);
 }
 
-bool generateWeights(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list<std::vector<unsigned int>>& orders,
+void generateWeights(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list<std::vector<unsigned int>>& orders,
                      const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& product_weights)
 {
   warehousesNeeded.clear();
@@ -115,19 +115,17 @@ bool generateWeights(std::list<std::vector<unsigned int>>& warehousesNeeded,std:
   orders.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[3]<b[3];});
   // sort warehouses needed by score
   warehousesNeeded.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[0]<b[0];});
-
-  return true;
 }
 
 bool ApplyNextOrder(Drone& drone)
 {
   // find next order
   std::list<std::vector<unsigned int>> warehousesNeeded;
-  auto success = generateWeights(warehousesNeeded, orders, warehouses, productWeights);
-  if (!success)
-    return true;
+  generateWeights(warehousesNeeded, orders, warehouses, productWeights);
+
   if(orders.size()==0)
     return false;
+
   auto& order = orders.front();
   auto& warehouseNeeded = warehousesNeeded.front();
 
