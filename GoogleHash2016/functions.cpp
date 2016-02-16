@@ -44,12 +44,10 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
   return static_cast<unsigned int>(sqrt(pow(dx,2)+pow(dy,2))+0.99999999);
 }
 
-void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list<std::vector<unsigned int>>& orders,
+void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::vector<unsigned int>>& orders,
                 const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights,
                 unsigned int maxPayload)
 {
-  warehousesNeeded.clear();
-
   // clear empty orders
   for(auto orderIt=orders.begin();orderIt!=orders.end();++orderIt)
   {
@@ -63,8 +61,11 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
     if(isEmpty)
       orderIt=orders.erase(orderIt);
   }
+  if(orders.size()==0)
+    return;
 
   // calculate score for each order
+  std::list<std::vector<unsigned int>> warehousesNeeded;
   for(auto& order:orders)
   {
     // clear order score
@@ -131,49 +132,56 @@ void sortOrders(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list
   orders.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[3]<b[3];});
   // sort warehouses needed by score
   warehousesNeeded.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[0]<b[0];});
+  firstOrderWarehouse=std::move(warehousesNeeded.front());
 }
 
 bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,std::vector<std::vector<unsigned int>>& warehouses,
                     const std::vector<unsigned int>& productWeights,unsigned int& totalCommands,unsigned int maxPayload)
 {
   // find next order
-  std::list<std::vector<unsigned int>> warehousesNeeded;
-  sortOrders(warehousesNeeded,orders,warehouses,productWeights,maxPayload);
+  std::vector<unsigned int> firstOrderWerahouse;
+  sortOrders(firstOrderWerahouse,orders,warehouses,productWeights,maxPayload);
 
   if(orders.size()==0)
     return false;
 
-  auto& order(orders.front());
-  auto& warehouseNeeded(warehousesNeeded.front());
+  auto residualPayload(maxPayload);
 
   // list of commands to execute
   std::list<std::array<unsigned int,3>> loadCommands;
   std::list<std::array<unsigned int,3>> deliverCommands;
 
-  // loop over products
-  auto residualPayload(maxPayload);
-  unsigned int prodIdx(0);
-  for(;prodIdx!=productWeights.size();++prodIdx)
+  auto& order(orders.front());
+  // loop over orders
+  //for(auto& order:orders)
   {
-    // do I need this product?
-    if((order[prodIdx+4]>0)&&(residualPayload>=productWeights[prodIdx]))
+    // loop over products
+    for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
     {
-      // compute number of trips needed
-      auto desired(order[prodIdx+4]);
-      unsigned int trips;
-      if((productWeights[prodIdx]*desired)%residualPayload)
-        trips=(productWeights[prodIdx]*desired)/residualPayload+1;
-      else
-        trips=(productWeights[prodIdx]*desired)/residualPayload;
-      // reserve maximum loadable quantities
-      if(trips>1)
-        desired=residualPayload/productWeights[prodIdx];
-      residualPayload-=desired*productWeights[prodIdx];
-      warehouses[warehouseNeeded[prodIdx+1]][prodIdx+2]-=desired;
-      order[prodIdx+4]-=desired;
-      // store commands
-      loadCommands.push_back({warehouseNeeded[prodIdx+1],prodIdx,desired});
-      deliverCommands.push_back({order[0],prodIdx,desired});
+      // do I need this product?
+      if((order[prodIdx+4]>0)&&(residualPayload>=productWeights[prodIdx]))
+      {
+        const auto warehouseIdx(firstOrderWerahouse[prodIdx+1]);
+        if(warehouses[warehouseIdx][prodIdx+2]>=order[prodIdx+4])
+        {
+          // compute number of trips needed
+          auto desired(order[prodIdx+4]);
+          unsigned int trips;
+          if((productWeights[prodIdx]*desired)%residualPayload)
+            trips=(productWeights[prodIdx]*desired)/residualPayload+1;
+          else
+            trips=(productWeights[prodIdx]*desired)/residualPayload;
+          // reserve maximum loadable quantities
+          if(trips>1)
+            desired=residualPayload/productWeights[prodIdx];
+          residualPayload-=desired*productWeights[prodIdx];
+          warehouses[warehouseIdx][prodIdx+2]-=desired;
+          order[prodIdx+4]-=desired;
+          // store commands
+          loadCommands.push_back({warehouseIdx,prodIdx,desired});
+          deliverCommands.push_back({order[0],prodIdx,desired});
+        }
+      }
     }
   }
 
