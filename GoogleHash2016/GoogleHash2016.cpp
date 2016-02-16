@@ -39,8 +39,8 @@ int main(int argc, char** argv)
     inputFile >> numProducts;
     // read products weigths
     productWeights.resize(numProducts, 0);
-    for (unsigned int i = 0; i < numProducts; ++i)
-      inputFile >> productWeights[i];
+    for (auto& productWeight:productWeights)
+      inputFile >> productWeight;
     // read number warehouses
     inputFile >> numWarehouses;
     // read warehouses data
