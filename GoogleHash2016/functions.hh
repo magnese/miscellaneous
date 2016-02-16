@@ -13,7 +13,7 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
 
 struct Drone
 {
-  Drone(const std::vector<std::vector<unsigned int>>& orders,
+  Drone(const std::list<std::vector<unsigned int>>& orders,
         const std::vector<std::vector<unsigned int>>& warehouses):
     orders_(orders),warehouses_(warehouses),currentTime(0), X(warehouses_[0][0]),Y(warehouses_[0][1])
   {};
@@ -29,8 +29,19 @@ struct Drone
     switch (comm)
     {
       case DroneCommand::DELIVER:
-        currentTime += distance(X,Y,orders_[val1][1],orders_[val1][2]) + 1;
+      {
+        bool found(false);
+        auto orderIt=orders_.begin();
+        while(!found)
+        {
+          if((*orderIt)[0]==val1)
+            found=true;
+          else
+            ++orderIt;
+        }
+        currentTime += distance(X,Y,(*orderIt)[1],(*orderIt)[2])+1;
         break;
+      }
       case DroneCommand::LOAD:
         currentTime += distance(X,Y,warehouses_[val1][0],warehouses_[val1][1]) + 1;
         break;
@@ -41,7 +52,7 @@ struct Drone
     }
   }
 
-  const std::vector<std::vector<unsigned int>>& orders_;
+  const std::list<std::vector<unsigned int>>& orders_;
   const std::vector<std::vector<unsigned int>>& warehouses_;
   std::list<std::array<unsigned int, 4>> commands;
   unsigned int currentTime;

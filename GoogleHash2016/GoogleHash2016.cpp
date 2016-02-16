@@ -10,7 +10,7 @@
 #include "functions.hh"
 
 std::vector<std::vector<unsigned int>> warehouses;
-std::vector<std::vector<unsigned int>> orders;
+std::list<std::vector<unsigned int>> orders;
 std::vector<unsigned int> productWeights;
 unsigned int numTurns;
 unsigned int maxPayload;
@@ -60,13 +60,16 @@ int main(int argc, char** argv)
     // read number of orders
     inputFile >> numOrders;
     // read orders data
-    orders.resize(numOrders);
-    for (auto& order : orders)
+    for(unsigned int i=0;i!=numOrders;++i)
     {
-      unsigned int offset(3);
-      order.resize(numProducts + offset, 0);
+      unsigned int offset(4);
+      std::vector<unsigned int> order(numProducts + offset, 0);
+      // set order index
+      order[0]=i;
       // read position werahouse
       inputFile >> order[1] >> order[2];
+      // set order weight
+      order[3]=0;
       // read number of items
       inputFile >> numItems;
       for (unsigned int i = offset; i != (numItems + offset); ++i)
@@ -75,6 +78,7 @@ int main(int argc, char** argv)
         inputFile >> item;
         ++(order[item + offset]);
       }
+      orders.emplace_back(std::move(order));
     }
     inputFile.close();
   }

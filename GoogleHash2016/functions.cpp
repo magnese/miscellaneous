@@ -8,7 +8,7 @@
 #include <iostream>
 #include "functions.hh"
 
-extern std::vector<std::vector<unsigned int>> orders;
+extern std::list<std::vector<unsigned int>> orders;
 extern std::vector<std::vector<unsigned int>> warehouses;
 extern std::vector<unsigned int> productWeights;
 extern unsigned int numTurns;
@@ -50,29 +50,28 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
   return static_cast<unsigned int>(sqrt(pow(dx,2)+pow(dy,2))+0.99999999);
 }
 
-bool generateWeights(std::vector<std::array<unsigned int,2>>& ordersScores,
-  std::vector< std::vector< unsigned int > >& orders_nearest_warehouses,
-  const std::vector< std::vector< unsigned int > > & orders,
-  const std::vector< std::vector< unsigned int > > & warehouses,
-  const std::vector< unsigned int > & product_weights)
+bool generateWeights(std::list<std::vector<unsigned int>>& warehousesNeeded,std::list<std::vector<unsigned int>>& orders,
+                     const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& product_weights)
 {
-  ordersScores.clear();
-  ordersScores.resize(orders.size(),{0,0});
+  warehousesNeeded.clear();
 
-  orders_nearest_warehouses.resize(orders.size(), std::vector< unsigned int >(productWeights.size(), -1));
   // calculate score for each order
-  for(unsigned int i = 0; i < orders.size(); ++i)
+  for(auto& order:orders)
   {
-    ordersScores[i][0]=i;
-    if (orders[i][0] == 1)
-      continue;
+    // clear order score
+    order[3]=0;
+
+    // create warehouse needed
+    std::vector<unsigned int> warehouseNeeded(productWeights.size()+1,-1);
+
     // calculate the distance from order i to each warehouse
     std::vector<std::array<unsigned int,2>> warehouse_distances(warehouses.size(),{0,0});
     for(unsigned int warehouse_idx = 0; warehouse_idx < warehouses.size(); ++warehouse_idx)
     {
       warehouse_distances[warehouse_idx][0]=warehouse_idx;
-      warehouse_distances[warehouse_idx][1]=distance(orders[i][1],orders[i][2],warehouses[warehouse_idx][0],warehouses[warehouse_idx][1]);
+      warehouse_distances[warehouse_idx][1]=distance(order[1],order[2],warehouses[warehouse_idx][0],warehouses[warehouse_idx][1]);
     }
+
     // sort warehouse distances
     std::sort(warehouse_distances.begin(),warehouse_distances.end(),
       [](const std::array<unsigned int,2>& a,const std::array<unsigned int,2>& b){return a[1]<b[1];});
@@ -80,10 +79,10 @@ bool generateWeights(std::vector<std::array<unsigned int,2>>& ordersScores,
     for(unsigned int prod_idx = 0; prod_idx < product_weights.size(); ++prod_idx)
     {
       // does the order need product prod_idx?
-      if(orders[i][prod_idx + 3] > 0)
+      if(order[prod_idx + 4] > 0)
       {
         // find nearest warehouse with enough product prod_idx
-        const auto desired = orders[i][prod_idx + 3];
+        const auto desired = order[prod_idx + 4];
         bool found(false);
         unsigned int warehouseIdx;
         unsigned int distance;
@@ -100,43 +99,46 @@ bool generateWeights(std::vector<std::array<unsigned int,2>>& ordersScores,
         }
         if(!found)
         {
-          ordersScores[i][1] = -1;
+          order[3] = -1;
           continue;
         }
-        ordersScores[i][1] += distance;
-        orders_nearest_warehouses[i][prod_idx] = warehouseIdx;
+        order[3] += distance;
+        warehouseNeeded[prod_idx+1] = warehouseIdx;
       }
     }
+    // assign the same score so it will be sorted as orders
+    warehouseNeeded[0]=order[3];
+    warehousesNeeded.emplace_back(std::move(warehouseNeeded));
   }
+
+  // sort orders by score
+  orders.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[3]<b[3];});
+  // sort warehouses needed by score
+  warehousesNeeded.sort([](const std::vector<unsigned int>& a,const std::vector<unsigned int>& b){return a[0]<b[0];});
+
   return true;
 }
 
 bool ApplyNextOrder(Drone& drone)
 {
   // find next order
-  std::vector<std::array<unsigned int,2>> ordersScores;
-  std::vector<std::vector<unsigned int>> warehousesNeeded;
-  auto success = generateWeights(ordersScores, warehousesNeeded, orders, warehouses, productWeights);
+  std::list<std::vector<unsigned int>> warehousesNeeded;
+  auto success = generateWeights(warehousesNeeded, orders, warehouses, productWeights);
   if (!success)
     return true;
-  std::sort(ordersScores.begin(),ordersScores.end(),
-    [](const std::array<unsigned int,2>& a,const std::array<unsigned int,2>& b){return a[1]<b[1];});
-
-  unsigned int index = 0;
-  while (index < ordersScores.size() && orders[ordersScores[index][0]][0] != 0)
-    ++index; // find the next one
-  if (index == ordersScores.size())
+  if(orders.size()==0)
     return false;
-  auto currentOrder = ordersScores[index][0];
+  auto& order = orders.front();
+  auto& warehouseNeeded = warehousesNeeded.front();
 
   // ok now that's my current order, let's do something with it.
   for (unsigned int prodIdx = 0; prodIdx < productWeights.size(); ++prodIdx)
   {
     // do I want this one?
-    if (orders[currentOrder][prodIdx + 3] > 0) // Yes I want this one. Start queueing.
+    if (order[prodIdx + 4] > 0) // Yes I want this one. Start queueing.
     {
-      unsigned int desired = orders[currentOrder][prodIdx + 3];
-      warehouses[warehousesNeeded[currentOrder][prodIdx]][prodIdx+2]-=desired;
+      auto desired = order[prodIdx + 4];
+      warehouses[warehouseNeeded[prodIdx+1]][prodIdx+2]-=desired;
       // how many can I carry at a time?
       unsigned int trips;
       if((productWeights[prodIdx] * desired) % maxPayload)
@@ -147,14 +149,14 @@ bool ApplyNextOrder(Drone& drone)
       unsigned int remaining = desired;
       for (unsigned int trip = 0; trip < trips; ++trip)
       {
-        drone.AddCommand(DroneCommand::LOAD, warehousesNeeded[currentOrder][prodIdx], prodIdx, std::min(remaining,maxPerTrip));
-        drone.AddCommand(DroneCommand::DELIVER, currentOrder, prodIdx, std::min(remaining, maxPerTrip));
+        drone.AddCommand(DroneCommand::LOAD, warehouseNeeded[prodIdx+1], prodIdx, std::min(remaining,maxPerTrip));
+        drone.AddCommand(DroneCommand::DELIVER, order[0], prodIdx, std::min(remaining, maxPerTrip));
       }
     }
   }
   if (drone.currentTime < numTurns)
     score += (100 * (numTurns - drone.currentTime)) / numTurns; // add a score for this delivery
-  orders[currentOrder][0] = 1;
+  orders.pop_front();
 
   return true;
 }
