@@ -1,0 +1,4 @@
+count also drone distances in order scores
+choose closer drone instead of the first available
+try random order picking policy
+try closer picking policy

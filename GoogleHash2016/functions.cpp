@@ -145,15 +145,33 @@ bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,st
   if(orders.size()==0)
     return false;
 
+  // find closer warehouse which has some needed product
+  unsigned int minDistance(std::numeric_limits<unsigned int>::max());
+  unsigned int warehouseIdx(0);
+  auto& order(orders.front());
+  for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
+  {
+    // do I need this product?
+    if(order[prodIdx+4]>0)
+    {
+      const auto idx=firstOrderWerahouse[prodIdx+1];
+      const auto dist=distance(drone.X,drone.Y,warehouses[idx][0],warehouses[idx][1]);
+      if(dist<minDistance)
+      {
+        warehouseIdx=idx;
+        minDistance=dist;
+      }
+    }
+  }
+
   auto residualPayload(maxPayload);
 
   // list of commands to execute
   std::list<std::array<unsigned int,3>> loadCommands;
   std::list<std::array<unsigned int,3>> deliverCommands;
 
-  auto& order(orders.front());
   // loop over orders
-  //for(auto& order:orders)
+  for(auto& order:orders)
   {
     // loop over products
     for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
@@ -161,7 +179,7 @@ bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,st
       // do I need this product?
       if((order[prodIdx+4]>0)&&(residualPayload>=productWeights[prodIdx]))
       {
-        const auto warehouseIdx(firstOrderWerahouse[prodIdx+1]);
+        // do I have this product?
         if(warehouses[warehouseIdx][prodIdx+2]>=order[prodIdx+4])
         {
           // compute number of trips needed
