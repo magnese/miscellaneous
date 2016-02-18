@@ -54,8 +54,13 @@ struct Drone
   unsigned int Y;
 };
 
-bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,std::vector<std::vector<unsigned int>>& warehouses,
-                    const std::vector<unsigned int>& productWeights,unsigned int& totalCommands,unsigned int maxPayload);
-void OutputCommands(const std::vector<Drone>& drones,const std::string& filename,unsigned int totalCommands);
+void clearOrders(std::list<std::vector<unsigned int>>& orders);
+void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::vector<unsigned int>>& orders,
+                const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights,
+                unsigned int maxPayload);
+void applyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,std::vector<std::vector<unsigned int>>& warehouses,
+                    const std::vector<unsigned int>& productWeights,unsigned int& totalCommands,unsigned int maxPayload,
+                    const std::vector<unsigned int>& firstOrderWerahouse);
+void outputCommands(const std::vector<Drone>& drones,const std::string& filename,unsigned int totalCommands);
 
 #endif

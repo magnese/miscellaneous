@@ -90,17 +90,31 @@ int main(int argc, char** argv)
   std::vector<Drone> droneSwarm(numDrones,Drone(orders,warehouses));
 
   // generate commands
-  bool success(true);
-  for(unsigned int t=0;(t!=numTurns)&&success;++t)
+  for(unsigned int t=0;t!=numTurns;++t)
   {
-    for(auto droneIt=droneSwarm.begin();(droneIt!=droneSwarm.end())&&success;++droneIt)
-      if(droneIt->isAvailable(t))
-        success = ApplyNextOrder(*droneIt,orders,warehouses,productWeights,totalCommands,maxPayload);
+    bool dronesAvailable(true);
+    while(dronesAvailable)
+    {
+      dronesAvailable=false;
+      for(auto droneIt=droneSwarm.begin();droneIt!=droneSwarm.end();++droneIt)
+        if(droneIt->isAvailable(t))
+        {
+          clearOrders(orders);
+          if(orders.size()==0)
+            break;
+          std::vector<unsigned int> firstOrderWerahouse;
+          sortOrders(firstOrderWerahouse,orders,warehouses,productWeights,maxPayload);
+          applyNextOrder(*droneIt,orders,warehouses,productWeights,totalCommands,maxPayload,firstOrderWerahouse);
+          dronesAvailable=true;
+        }
+    }
+    if(orders.size()==0)
+      break;
     std::cout<<"t = "<<t<<" (remaining orders = "<<orders.size()<<")"<<std::endl;
   }
 
   // dump on file
-  OutputCommands(droneSwarm,"solution.out",totalCommands);
+  outputCommands(droneSwarm,"solution.out",totalCommands);
 
   return 0;
 }

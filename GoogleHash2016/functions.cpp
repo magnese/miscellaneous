@@ -10,7 +10,7 @@
 
 #include "functions.hh"
 
-void OutputCommands(const std::vector<Drone>& drones,const std::string& filename,unsigned int totalCommands)
+void outputCommands(const std::vector<Drone>& drones,const std::string& filename,unsigned int totalCommands)
 {
   std::map<unsigned int, char> CommandToOutput;
   CommandToOutput[DroneCommand::LOAD]='L';
@@ -44,26 +44,27 @@ unsigned int distance(unsigned int x0,unsigned int y0,unsigned int x1,unsigned i
   return static_cast<unsigned int>(sqrt(pow(dx,2)+pow(dy,2))+0.99999999);
 }
 
-void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::vector<unsigned int>>& orders,
-                const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights,
-                unsigned int maxPayload)
+void clearOrders(std::list<std::vector<unsigned int>>& orders)
 {
   // clear empty orders
-  for(auto orderIt=orders.begin();orderIt!=orders.end();++orderIt)
+  for(auto it=orders.begin();it!=orders.end();++it)
   {
     bool isEmpty(true);
-    for(unsigned int prodIdx=0;prodIdx!=productWeights.size();++prodIdx)
-      if((*orderIt)[prodIdx+4]>0)
+    for(unsigned int i=4;i!=it->size();++i)
+      if((*it)[i]>0)
       {
         isEmpty=false;
         break;
       }
     if(isEmpty)
-      orderIt=orders.erase(orderIt);
+      it=orders.erase(it);
   }
-  if(orders.size()==0)
-    return;
+}
 
+void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::vector<unsigned int>>& orders,
+                const std::vector<std::vector<unsigned int>>& warehouses,const std::vector<unsigned int>& productWeights,
+                unsigned int maxPayload)
+{
   // calculate score for each order
   std::list<std::vector<unsigned int>> warehousesNeeded;
   for(auto& order:orders)
@@ -76,7 +77,7 @@ void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::ve
 
     // calculate the distance from order i to each warehouse
     std::vector<std::array<unsigned int,2>> warehouseDistances(warehouses.size(),{0,0});
-    for(unsigned int warehouseIdx= 0;warehouseIdx!=warehouses.size();++warehouseIdx)
+    for(unsigned int warehouseIdx=0;warehouseIdx!=warehouses.size();++warehouseIdx)
     {
       warehouseDistances[warehouseIdx][0]=warehouseIdx;
       warehouseDistances[warehouseIdx][1]=distance(order[1],order[2],warehouses[warehouseIdx][0],warehouses[warehouseIdx][1]);
@@ -135,16 +136,10 @@ void sortOrders(std::vector<unsigned int>& firstOrderWarehouse,std::list<std::ve
   firstOrderWarehouse=std::move(warehousesNeeded.front());
 }
 
-bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,std::vector<std::vector<unsigned int>>& warehouses,
-                    const std::vector<unsigned int>& productWeights,unsigned int& totalCommands,unsigned int maxPayload)
+void applyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,std::vector<std::vector<unsigned int>>& warehouses,
+                    const std::vector<unsigned int>& productWeights,unsigned int& totalCommands,unsigned int maxPayload,
+                    const std::vector<unsigned int>& firstOrderWerahouse)
 {
-  // find next order
-  std::vector<unsigned int> firstOrderWerahouse;
-  sortOrders(firstOrderWerahouse,orders,warehouses,productWeights,maxPayload);
-
-  if(orders.size()==0)
-    return false;
-
   // find closer warehouse which has some needed product
   unsigned int minDistance(std::numeric_limits<unsigned int>::max());
   unsigned int warehouseIdx(0);
@@ -208,6 +203,4 @@ bool ApplyNextOrder(Drone& drone,std::list<std::vector<unsigned int>>& orders,st
     drone.AddLoadCommand(command[0],command[1],command[2],totalCommands);
   for(const auto& command:deliverCommands)
     drone.AddDeliverCommand(command[0],command[1],command[2],totalCommands);
-
-  return true;
 }
