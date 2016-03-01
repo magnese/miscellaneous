@@ -25,7 +25,7 @@ int main()
     for(unsigned int j=0;j!=size[1];++j)
       for(unsigned int i=0;i!=size[0];++i)
       {
-        unsigned int pos(k*size[0]*size[1]);
+        auto pos(k*size[0]*size[1]);
         if(k%2==0)
         {
           pos+=((j%2==0)?(j*size[0]+i):((j+1)*size[0]-i-1));
@@ -33,7 +33,7 @@ int main()
         else
         {
           pos+=size[0]*size[1]-1;
-          pos-=((j%2==1)?((j+1)*size[0]-i-1):(j*size[0]+i));
+          pos-=((j%2==0)?(j*size[0]+i):((j+1)*size[0]-i-1));
         }
         if(pos>=mapping.size())
           throw;
