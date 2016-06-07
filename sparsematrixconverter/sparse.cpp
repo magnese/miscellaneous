@@ -1,77 +1,117 @@
 #include <vector>
 #include <iostream>
 
-template<class T>
-void print(const T& vec,const std::string& name)
+struct SparseRowMatrix
 {
-  std::cout<<name<<" = { ";
-  for(auto& i:vec)
-    std::cout<<i<<" ";
-  std::cout<<"}"<<std::endl;
-}
+  typedef std::size_t size_type;
+  typedef double value_type;
 
-void convert(const int& N_, const int& M_,const std::vector<int>& Ap,const std::vector<int>& Ai,const std::vector<double>& Ax)
-{
-  // count the number of nonzeros per column
-  std::vector<int> colstart_(M_+1,0);
-  int Nnz_(0);
-  int count(0);
-  for(int i=0;i!=N_;++i)
+  SparseRowMatrix() = default;
+
+  SparseRowMatrix(size_type N_,size_type M_,std::vector<size_type>&& colstart_,std::vector<size_type>&& rowindex_,
+                  std::vector<value_type>&& values_):
+  N(N_),M(M_),colstart(colstart_),rowindex(rowindex_),values(values_)
+  {}
+
+  void print() const
   {
-    Nnz_+=(Ap[i+1]-Ap[i]);
-    while(count<Nnz_)
+    for(size_type i=0;i!=N;++i)
     {
-      ++(colstart_[Ai[count]+1]);
+      std::vector<value_type> row(M,0.0);
+      for(size_type j=colstart[i];j!=colstart[i+1];++j)
+        row[rowindex[j]]=values[j];
+      for(const auto& value:row)
+        std::cout<<value<<" ";
+      std::cout<<std::endl;
+    }
+    std::cout<<std::endl;
+  }
+
+  void printAsVectors() const
+  {
+    std::cout<<"colstart = { ";
+    for(const auto& value:colstart)
+      std::cout<<value<<" ";
+    std::cout<<"}"<<std::endl;
+    std::cout<<"rowindex = { ";
+    for(const auto& value:rowindex)
+      std::cout<<value<<" ";
+    std::cout<<"}"<<std::endl;
+    std::cout<<"values = { ";
+    for(const auto& value:values)
+      std::cout<<value<<" ";
+    std::cout<<"}"<<std::endl;
+    std::cout<<std::endl;
+  }
+
+  size_type N;
+  size_type M;
+  std::vector<size_type> colstart;
+  std::vector<size_type> rowindex;
+  std::vector<value_type> values;
+};
+
+SparseRowMatrix transpose(const SparseRowMatrix& matrix)
+{
+  // create transpose matrix
+  SparseRowMatrix matrixT;
+  matrixT.N=matrix.N;
+  matrixT.M=matrix.M;
+
+  // count the number of nonzeros per column
+  matrixT.colstart.resize(matrix.M+1,0);
+  typedef typename SparseRowMatrix::size_type size_type;
+  size_type Nnz(0);
+  size_type count(0);
+  for(size_type i=0;i!=matrix.N;++i)
+  {
+    Nnz+=(matrix.colstart[i+1]-matrix.colstart[i]);
+    while(count<Nnz)
+    {
+      ++(matrixT.colstart[matrix.rowindex[count]+1]);
       ++count;
     }
   }
 
   // compute the starting positions
-  std::vector<int> tempPos(M_,0);
-  for(int i=1;i!=(M_+1);++i)
+  std::vector<size_type> tempPos(matrix.M,0);
+  for(size_type i=1;i!=(matrix.M+1);++i)
   {
-    colstart_[i]+=colstart_[i-1];
-    tempPos[i-1]=colstart_[i-1];
+    matrixT.colstart[i]+=matrixT.colstart[i-1];
+    tempPos[i-1]=matrixT.colstart[i-1];
   }
 
   // fill the values and the index vector
-  std::vector<double> values_(Nnz_);
-  std::vector<int> rowindex_(Nnz_);
+  matrixT.values.resize(Nnz,0);
+  matrixT.rowindex.resize(Nnz,0);
   count=0;
-  for(int i=0;i!=N_;++i)
+  for(size_type i=0;i!=matrix.N;++i)
   {
-    int localCount(0);
-    while(localCount<(Ap[i+1]-Ap[i]))
+    size_type localCount(0);
+    while(localCount<(matrix.colstart[i+1]-matrix.colstart[i]))
     {
-      values_[tempPos[Ai[count]]]=Ax[count];
-      rowindex_[tempPos[Ai[count]]]=i;
-      ++(tempPos[Ai[count]]);
+      matrixT.values[tempPos[matrix.rowindex[count]]]=matrix.values[count];
+      matrixT.rowindex[tempPos[matrix.rowindex[count]]]=i;
+      ++(tempPos[matrix.rowindex[count]]);
       ++localCount;
       ++count;
     }
   }
 
-  // output
-  print(colstart_,"Ap'");
-  print(rowindex_,"Ai'");
-  print(values_,"Ax'");
+  return matrixT;
 }
-
 
 int main()
 {
-  int N(4);
-  int M(4);
-  std::vector<int> Ap={0,3,4,6,8};
-  std::vector<int> Ai={0,2,3,2,0,1,0,1};
-  std::vector<double> Ax={1.,2.,3.,4.,1.,5.,2.,3.};
+  std::cout<<"Matrix :"<<std::endl;
+  const SparseRowMatrix matrix(4,4,{0,3,4,6,8},{0,2,3,2,0,1,0,1},{1.,2.,3.,4.,1.,5.,2.,3.});
+  matrix.print();
+  matrix.printAsVectors();
 
-  print(Ap,"Ap");
-  print(Ai,"Ai");
-  print(Ax,"Ax");
-  std::cout<<std::endl;
-
-  convert(N,M,Ap,Ai,Ax);
+  std::cout<<"Matrix^T :"<<std::endl;
+  const auto matrixT=transpose(matrix);
+  matrixT.print();
+  matrixT.printAsVectors();
 
   return 0;
 }
