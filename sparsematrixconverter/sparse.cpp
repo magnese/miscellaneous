@@ -66,11 +66,8 @@ SparseRowMatrix transpose(const SparseRowMatrix& matrix)
   for(size_type i=0;i!=matrix.N;++i)
   {
     Nnz+=(matrix.colstart[i+1]-matrix.colstart[i]);
-    while(count<Nnz)
-    {
+    for(;count<Nnz;++count)
       ++(matrixT.colstart[matrix.rowindex[count]+1]);
-      ++count;
-    }
   }
 
   // compute the starting positions
@@ -86,17 +83,12 @@ SparseRowMatrix transpose(const SparseRowMatrix& matrix)
   matrixT.rowindex.resize(Nnz,0);
   count=0;
   for(size_type i=0;i!=matrix.N;++i)
-  {
-    size_type localCount(0);
-    while(localCount<(matrix.colstart[i+1]-matrix.colstart[i]))
+    for(size_type localCount=0;localCount<(matrix.colstart[i+1]-matrix.colstart[i]);++localCount,++count)
     {
       matrixT.values[tempPos[matrix.rowindex[count]]]=matrix.values[count];
       matrixT.rowindex[tempPos[matrix.rowindex[count]]]=i;
       ++(tempPos[matrix.rowindex[count]]);
-      ++localCount;
-      ++count;
     }
-  }
 
   return matrixT;
 }
