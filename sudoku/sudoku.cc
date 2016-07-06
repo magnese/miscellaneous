@@ -1,4 +1,3 @@
-#include <array>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -8,8 +7,7 @@
 int main(int argc,char** argv)
 {
   //create sudoku structure
-  constexpr unsigned int size(9);
-  std::array<std::array<std::array<unsigned int,size+1>,size>,size> sudoku;
+  Sudoku sudoku;
 
   // read file containing sudoku to solve
   std::string filename("sudoku.dat");
@@ -19,10 +17,8 @@ int main(int argc,char** argv)
   if(inputFile.is_open())
   {
     std::cout<<"Sudoku read from file "<<filename<<std::endl;
-    for(auto& row:sudoku)
-      for(auto& entry:row)
-        inputFile>>entry[0];
-    print(sudoku);
+    inputFile>>sudoku;
+    std::cout<<sudoku<<std::endl;
   }
   else
   {
@@ -31,7 +27,7 @@ int main(int argc,char** argv)
   }
 
   // init sudoku
-  init(sudoku);
+  sudoku.init();
 
   // solve sudoku
   bool changed;
@@ -50,19 +46,14 @@ int main(int argc,char** argv)
   std::ofstream outputFile(filename);
   if(outputFile.is_open())
   {
-    for(const auto& row:sudoku)
-    {
-      for(const auto& entry:row)
-        outputFile<<entry[0]<<" ";
-      outputFile<<std::endl;
-    }
+    outputFile<<sudoku;
     std::cout<<"Sudoku solution written on file "<<filename<<std::endl;
-    print(sudoku);
+    std::cout<<sudoku<<std::endl;
   }
   else
   {
     std::cout<<"Impossibile to write sudoku solution on file "<<filename<<std::endl;
-    print(sudoku);
+    std::cout<<sudoku<<std::endl;
     return 1;
   }
 

@@ -1,17 +1,64 @@
 #ifndef SUDOKU_HH
 #define SUDOKU_HH
 
+#include <array>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 
-template<typename T>
-void init(T& s)
+// Sudoku structure
+class Sudoku:public std::array<std::array<std::array<unsigned int,10>,9>,9>
 {
-  for(auto& row:s)
-    for(auto& column:row)
-      if(column[0]==0)
-        for(auto& entry:column)
-          entry=0;
+  public:
+  void init()
+  {
+    for(auto& row:*this)
+      for(auto& column:row)
+        if(column[0]==0)
+          for(auto& entry:column)
+            entry=0;
+  }
+};
+
+// Read
+std::istream& operator>>(std::istream& is,Sudoku& sudoku)
+{
+	for(auto& row:sudoku)
+    for(auto& entry:row)
+      is>>entry[0];
+  return is;
+}
+
+// Print to file
+std::ofstream& operator<<(std::ofstream& os,const Sudoku& sudoku)
+{
+	for(const auto& row:sudoku)
+  {
+    for(const auto& entry:row)
+      os<<entry[0]<<" ";
+    os<<std::endl;
+  }
+  return os;
+}
+
+// Print
+std::ostream& operator<<(std::ostream& os,const Sudoku& sudoku)
+{
+  const auto size(sudoku.size());
+  const auto squareSize(static_cast<std::size_t>(sqrt(size)));
+  for(std::size_t row=0;row!=size;++row)
+  {
+    if(row%squareSize==0)
+      os<<std::endl;
+    for(std::size_t col=0;col!=size;++col)
+    {
+      if(col%squareSize==0)
+        os<<" ";
+      os<<sudoku[row][col][0]<<" ";
+    }
+    os<<std::endl;
+  }
+  return os;
 }
 
 template<typename T>
@@ -183,26 +230,6 @@ void fillSquares(T& s,bool& changed)
                 }
         }
   fillUniquesSquares(s,changed);
-}
-
-template<typename T>
-void print(const T& s,std::ostream& out=std::cout)
-{
-  const auto size(s.size());
-  const auto squareSize(static_cast<int>(sqrt(size)));
-  for(std::size_t row=0;row!=size;++row)
-  {
-    if(row%squareSize==0)
-      out<<std::endl;
-    for(std::size_t col=0;col!=size;++col)
-    {
-      if(col%squareSize==0)
-        out<<" ";
-      out<<s[row][col][0]<<" ";
-    }
-    out<<std::endl;
-  }
-  out<<std::endl;
 }
 
 #endif
