@@ -8,8 +8,8 @@
 int main(int argc,char** argv)
 {
   //create sudoku structure
-  constexpr int size(9);
-  std::array<std::array<std::array<int,size+1>,size>,size> sudoku;
+  constexpr unsigned int size(9);
+  std::array<std::array<std::array<unsigned int,size+1>,size>,size> sudoku;
 
   // read file containing sudoku to solve
   std::string filename("sudoku.dat");

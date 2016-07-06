@@ -21,8 +21,8 @@ void finalize(T& s)
     for(auto& entry:row)
       if(entry[0]==0)
       {
-        int cont(0);
-        for(int i=1;i!=entry.size();++i)
+        std::size_t cont(0);
+        for(std::size_t i=1;i!=entry.size();++i)
           if(entry[i]==0)
           {
             entry[0]=i;
@@ -37,12 +37,12 @@ template<typename T>
 void fillUniquesRows(T& s,bool& changed)
 {
   const auto size(s.size());
-  for(auto row=0;row!=size;++row)
-    for(auto entry=1;entry!=size+1;++entry)
+  for(std::size_t row=0;row!=size;++row)
+    for(std::size_t entry=1;entry!=size+1;++entry)
     {
-      int cont=0;
-      int colPos=0;
-      for(auto col=0;(col!=size)&&(cont<2);++col)
+      std::size_t cont=0;
+      std::size_t colPos=0;
+      for(std::size_t col=0;(col!=size)&&(cont<2);++col)
         if((s[row][col][0]==0)&&(s[row][col][entry]==0))
         {
           if(cont==0)
@@ -66,12 +66,12 @@ template<typename T>
 void fillRows(T& s,bool& changed)
 {
   const auto size(s.size());
-  for(auto row=0;row!=size;++row)
-    for(auto col=0;col!=size;++col)
+  for(std::size_t row=0;row!=size;++row)
+    for(std::size_t col=0;col!=size;++col)
     {
       const auto pos(s[row][col][0]);
       if(pos!=0)
-        for(auto i=0;i!=size;++i)
+        for(std::size_t i=0;i!=size;++i)
           if(s[row][i][pos]==0)
           {
             s[row][i][pos]=1;
@@ -85,12 +85,12 @@ template<typename T>
 void fillUniquesColumns(T& s,bool& changed)
 {
   const auto size(s.size());
-  for(auto col=0;col!=size;++col)
-    for(auto entry=1;entry!=size+1;++entry)
+  for(std::size_t col=0;col!=size;++col)
+    for(std::size_t entry=1;entry!=size+1;++entry)
     {
-      int cont=0;
-      int rowPos=0;
-      for(auto row=0;(row!=size)&&(cont<2);++row)
+      std::size_t cont=0;
+      std::size_t rowPos=0;
+      for(std::size_t row=0;(row!=size)&&(cont<2);++row)
         if((s[row][col][0]==0)&&(s[row][col][entry]==0))
         {
           if(cont==0)
@@ -114,12 +114,12 @@ template<typename T>
 void fillColumns(T& s,bool& changed)
 {
   const auto size(s.size());
-  for(auto col=0;col!=size;++col)
-    for(auto row=0;row!=size;++row)
+  for(std::size_t col=0;col!=size;++col)
+    for(std::size_t row=0;row!=size;++row)
     {
       const auto pos(s[row][col][0]);
       if(pos!=0)
-        for(auto i=0;i!=size;++i)
+        for(std::size_t i=0;i!=size;++i)
           if(s[i][col][pos]==0)
           {
             s[i][col][pos]=1;
@@ -134,13 +134,13 @@ void fillUniquesSquares(T& s,bool& changed)
 {
   const auto size(s.size());
   const auto squareSize(static_cast<int>(sqrt(size)));
-  for(auto srow=0;srow!=squareSize;++srow)
-    for(auto scol=0;scol!=squareSize;++scol)
-      for(auto entry=1;entry!=size+1;++entry)
+  for(std::size_t srow=0;srow!=squareSize;++srow)
+    for(std::size_t scol=0;scol!=squareSize;++scol)
+      for(std::size_t entry=1;entry!=size+1;++entry)
       {
-        int cont=0;
-        int rowPos=0;
-        int colPos=0;
+        std::size_t cont=0;
+        std::size_t rowPos=0;
+        std::size_t colPos=0;
         for(auto row=srow*squareSize;(row!=(srow+1)*squareSize)&&(cont<2);++row)
           for(auto col=scol*squareSize;(col!=(scol+1)*squareSize)&&(cont<2);++col)
             if((s[row][col][0]==0)&&(s[row][col][entry]==0))
@@ -167,8 +167,8 @@ template<typename T>
 void fillSquares(T& s,bool& changed)
 {
   const auto size(static_cast<int>(sqrt(s.size())));
-  for(auto srow=0;srow!=size;++srow)
-    for(auto scol=0;scol!=size;++scol)
+  for(std::size_t srow=0;srow!=size;++srow)
+    for(std::size_t scol=0;scol!=size;++scol)
       for(auto row=srow*size;row!=(srow+1)*size;++row)
         for(auto col=scol*size;col!=(scol+1)*size;++col)
         {
@@ -190,11 +190,11 @@ void print(const T& s)
 {
   const auto size(s.size());
   const auto squareSize(static_cast<int>(sqrt(size)));
-  for(auto row=0;row!=size;++row)
+  for(std::size_t row=0;row!=size;++row)
   {
     if(row%squareSize==0)
       std::cout<<std::endl;
-    for(auto col=0;col!=size;++col)
+    for(std::size_t col=0;col!=size;++col)
     {
       if(col%squareSize==0)
         std::cout<<" ";
