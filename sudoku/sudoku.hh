@@ -186,23 +186,23 @@ void fillSquares(T& s,bool& changed)
 }
 
 template<typename T>
-void print(const T& s)
+void print(const T& s,std::ostream& out=std::cout)
 {
   const auto size(s.size());
   const auto squareSize(static_cast<int>(sqrt(size)));
   for(std::size_t row=0;row!=size;++row)
   {
     if(row%squareSize==0)
-      std::cout<<std::endl;
+      out<<std::endl;
     for(std::size_t col=0;col!=size;++col)
     {
       if(col%squareSize==0)
-        std::cout<<" ";
-      std::cout<<s[row][col][0]<<" ";
+        out<<" ";
+      out<<s[row][col][0]<<" ";
     }
-    std::cout<<std::endl;
+    out<<std::endl;
   }
-  std::cout<<std::endl;
+  out<<std::endl;
 }
 
 #endif
