@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <stdlib.h>
+#include <tuple>
 
 int main(int argc,char** argv)
 {
@@ -11,7 +12,7 @@ int main(int argc,char** argv)
 
   if(argc<3)
   {
-    std::cout<<"qsubb v0.3"<<std::endl;
+    std::cout<<"qsubb v0.4"<<std::endl;
     std::cout<<"Description:\t qsubb creates a script and submit the job to qsub."<<std::endl;
     std::cout<<"Usage:\t\t qsubb program_name output_name [node_number](01 default)"<<std::endl;
     std::cout<<"\t\t Move to the folder where the program is saved."<<std::endl;
@@ -40,13 +41,14 @@ int main(int argc,char** argv)
   file<<"mkdir -p /scratchcomp"<<output_node<<"/"<<user<<std::endl;
   file<<"mkdir -p /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<std::endl;
   file<<"cd /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<std::endl;
+  file<<"export OPENBLAS_NUM_THREADS=1"<<std::endl;
   file<<pwd<<"/"<<program_name<<std::endl;
 
   const std::string command_chmod("chmod 755 "+program_name+"_qsub.sh");
-  system(command_chmod.c_str());
+  std::ignore=system(command_chmod.c_str());
 
   const std::string command_qsub("qsub "+program_name+"_qsub.sh");
-  system(command_qsub.c_str());
+  std::ignore=system(command_qsub.c_str());
 
   return 0;
 }
