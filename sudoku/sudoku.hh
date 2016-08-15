@@ -5,20 +5,11 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 // Sudoku structure
 class Sudoku:public std::array<std::array<std::array<unsigned int,10>,9>,9>
-{
-  public:
-  void init()
-  {
-    for(auto& row:*this)
-      for(auto& column:row)
-        if(column[0]==0)
-          for(auto& entry:column)
-            entry=0;
-  }
-};
+{};
 
 // Read
 std::istream& operator>>(std::istream& is,Sudoku& sudoku)
@@ -44,7 +35,7 @@ std::ofstream& operator<<(std::ofstream& os,const Sudoku& sudoku)
 // Print
 std::ostream& operator<<(std::ostream& os,const Sudoku& sudoku)
 {
-  const auto size(sudoku.size());
+  constexpr auto size(sudoku.size());
   const auto squareSize(static_cast<std::size_t>(sqrt(size)));
   for(std::size_t row=0;row!=size;++row)
   {
@@ -59,6 +50,91 @@ std::ostream& operator<<(std::ostream& os,const Sudoku& sudoku)
     os<<std::endl;
   }
   return os;
+}
+
+// Square indices map
+std::pair<std::size_t,std::size_t> squareMap(std::size_t fakeRow,std::size_t fakeCol)
+{
+	return std::pair<std::size_t,std::size_t>(fakeRow-fakeRow%3+fakeCol/3,fakeRow%3*3+fakeCol%3);
+}
+
+// Check if is consistent
+bool isConsistent(const Sudoku& sudoku)
+{
+  constexpr auto size(sudoku.size());
+
+  // check rows
+  for(std::size_t i=0;i!=size;++i)
+  {
+    std::vector<std::size_t> mask(size+1,0);
+    for(std::size_t j=0;j!=size;++j)
+      if(sudoku[i][j][0]>0)
+        if((++(mask[sudoku[i][j][0]]))>1)
+          return false;
+  }
+
+  // check columns
+  for(std::size_t i=0;i!=size;++i)
+  {
+    std::vector<std::size_t> mask(size+1,0);
+    for(std::size_t j=0;j!=size;++j)
+      if(sudoku[j][i][0]>0)
+        if((++(mask[sudoku[j][i][0]]))>1)
+          return false;
+  }
+
+	// check squares
+  for(std::size_t i=0;i!=size;++i)
+  {
+    std::vector<std::size_t> mask(size+1,0);
+    for(std::size_t j=0;j!=size;++j)
+		{
+			const auto indices(squareMap(i,j));
+      if(sudoku[indices.first][indices.second][0]>0)
+        if((++(mask[sudoku[indices.first][indices.second][0]]))>1)
+          return false;
+		}
+  }
+
+  return true;
+}
+
+// Recursive solve
+void recursiveSolve(Sudoku sudoku,std::size_t row=0,std::size_t col=0)
+{
+  if(!isConsistent(sudoku))
+    return;
+
+  constexpr auto size(sudoku.size());
+  bool found(false);
+  while((row<size)&&(!found))
+  {
+    while((col<size)&&(!found))
+    {
+      if(sudoku[row][col][0]==0)
+        found=true;
+      else
+        ++col;
+    }
+    if(!found)
+    {
+      col=0;
+      ++row;
+    }
+  }
+
+  if(!found)
+  {
+    std::cout<<sudoku<<std::endl;
+    std::cout<<"SOLVED!"<<std::endl;
+    return;
+  }
+
+  for(std::size_t val=1;val!=(size+1);++val)
+  {
+    sudoku[row][col][0]=val;
+    recursiveSolve(sudoku,row,col);
+  }
 }
 
 template<typename T>
@@ -83,7 +159,7 @@ void finalize(T& s)
 template<typename T>
 void fillUniquesRows(T& s,bool& changed)
 {
-  const auto size(s.size());
+  constexpr auto size(s.size());
   for(std::size_t row=0;row!=size;++row)
     for(std::size_t entry=1;entry!=size+1;++entry)
     {
@@ -112,7 +188,7 @@ void fillUniquesRows(T& s,bool& changed)
 template<typename T>
 void fillRows(T& s,bool& changed)
 {
-  const auto size(s.size());
+  constexpr auto size(s.size());
   for(std::size_t row=0;row!=size;++row)
     for(std::size_t col=0;col!=size;++col)
     {
@@ -131,7 +207,7 @@ void fillRows(T& s,bool& changed)
 template<typename T>
 void fillUniquesColumns(T& s,bool& changed)
 {
-  const auto size(s.size());
+  constexpr auto size(s.size());
   for(std::size_t col=0;col!=size;++col)
     for(std::size_t entry=1;entry!=size+1;++entry)
     {
@@ -160,7 +236,7 @@ void fillUniquesColumns(T& s,bool& changed)
 template<typename T>
 void fillColumns(T& s,bool& changed)
 {
-  const auto size(s.size());
+  constexpr auto size(s.size());
   for(std::size_t col=0;col!=size;++col)
     for(std::size_t row=0;row!=size;++row)
     {
@@ -179,7 +255,7 @@ void fillColumns(T& s,bool& changed)
 template<typename T>
 void fillUniquesSquares(T& s,bool& changed)
 {
-  const auto size(s.size());
+  constexpr auto size(s.size());
   const auto squareSize(static_cast<int>(sqrt(size)));
   for(std::size_t srow=0;srow!=squareSize;++srow)
     for(std::size_t scol=0;scol!=squareSize;++scol)
@@ -213,7 +289,7 @@ void fillUniquesSquares(T& s,bool& changed)
 template<typename T>
 void fillSquares(T& s,bool& changed)
 {
-  const auto size(static_cast<int>(sqrt(s.size())));
+  constexpr auto size(static_cast<int>(sqrt(s.size())));
   for(std::size_t srow=0;srow!=size;++srow)
     for(std::size_t scol=0;scol!=size;++scol)
       for(auto row=srow*size;row!=(srow+1)*size;++row)
@@ -230,6 +306,28 @@ void fillSquares(T& s,bool& changed)
                 }
         }
   fillUniquesSquares(s,changed);
+}
+
+void solve(Sudoku& sudoku)
+{
+  // init sudoku
+  for(auto& row:sudoku)
+    for(auto& column:row)
+      if(column[0]==0)
+        for(auto& entry:column)
+          entry=0;
+
+  // solve sudoku
+  bool changed;
+  do
+  {
+    changed=false;
+    fillRows(sudoku,changed);
+    fillColumns(sudoku,changed);
+    fillSquares(sudoku,changed);
+    finalize(sudoku);
+  }
+  while(changed);
 }
 
 #endif

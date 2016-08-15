@@ -26,20 +26,8 @@ int main(int argc,char** argv)
     return 1;
   }
 
-  // init sudoku
-  sudoku.init();
-
-  // solve sudoku
-  bool changed;
-  do
-  {
-    changed=false;
-    fillRows(sudoku,changed);
-    fillColumns(sudoku,changed);
-    fillSquares(sudoku,changed);
-    finalize(sudoku);
-  }
-  while(changed);
+  // solve
+  solve(sudoku);
 
   // write solved sudoku
   filename="solved_"+filename;
