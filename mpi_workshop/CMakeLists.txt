@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+aux_source_directory(. SRC_LIST)
+set(CMAKE_CXX_STANDARD 11)
+list(APPEND CMAKE_CXX_FLAGS "-Wall -pedantic -O3" ${CMAKE_CXX_FLAGS})
+
+find_package(MPI REQUIRED)
+
+include_directories(${MPI_INCLUDE_PATH})
+
+file(GLOB SRCFILES *.cpp)
+foreach(sourcefiles ${SRCFILES})
+  get_filename_component(barename ${sourcefiles} NAME)
+  string(REPLACE ".cpp" "" execname ${barename})
+  add_executable(${execname} ${sourcefiles})
+  target_link_libraries(${execname} ${MPI_LIBRARIES})
+  if(MPI_COMPILE_FLAGS)
+    set_target_properties(${execname} PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+  endif()
+  if(MPI_LINK_FLAGS)
+    set_target_properties(${execname} PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
+  endif()
+endforeach()
