@@ -1,11 +1,11 @@
 // Converter from Gmsh mesh file format to Alberta mesh file format
 // Author: Marco Agnese
 
-#include <iostream>
-#include <vector>
-#include <string>
 #include <fstream>
+#include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 enum FlagType{garbageFlag,numVerticesFlag,verticesFlag,numElementsFlag,elementsFlag};
 
@@ -16,11 +16,11 @@ int main(int argc,char** argv)
   if(argc>1)
   {
     inputFileName=argv[1];
-    std::cout<<"Mehs file name : "<<inputFileName<<std::endl;
+    std::cout<<"Mesh file name : "<<inputFileName<<std::endl;
   }
   else
   {
-    std::cout<<"Mehs file name : ";
+    std::cout<<"Mesh file name : ";
     std::cin>>inputFileName;
   }
   unsigned int worldDim;
@@ -129,12 +129,12 @@ int main(int argc,char** argv)
     outputFile<<"number of vertices: "<<numVertices<<std::endl;
     outputFile<<"number of elements: "<<numElements<<std::endl<<std::endl;
     outputFile<<"vertex coordinates:"<<std::endl;
-    for(std::vector<std::vector<double>>::iterator it=vertices.begin();it!=vertices.end();++it)
-      outputFile<<"\t"<<(*it)[0]<<" "<<(*it)[1]<<" "<<(*it)[2]<<std::endl;
+    for(auto&& vertex:vertices)
+      outputFile<<"\t"<<vertex[0]<<" "<<vertex[1]<<" "<<vertex[2]<<std::endl;
     outputFile<<std::endl;
     outputFile<<"element vertices:"<<std::endl;
-    for(std::vector<std::vector<unsigned int>>::iterator it=elements.begin();it!=elements.end();++it)
-      outputFile<<"\t"<<(*it)[0]-1<<" "<<(*it)[1]-1<<" "<<(*it)[2]-1<<std::endl;
+    for(auto&& element:elements)
+      outputFile<<"\t"<<element[0]-1<<" "<<element[1]-1<<" "<<element[2]-1<<std::endl;
     outputFile.close();
     std::cout<<"Mesh converted in file "<<outputFileName<<"."<<std::endl;
   }
