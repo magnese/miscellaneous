@@ -43,7 +43,7 @@ int main(int argc,char** argv)
   file<<"cd /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"\n";
   file<<"export OPENBLAS_NUM_THREADS=1\n";
   file<<pwd<<"/"<<program_name<<"\n";
-
+  file.close();
 
   const std::string command_qsub("qsub "+script_name);
   std::ignore=system(command_qsub.c_str());
