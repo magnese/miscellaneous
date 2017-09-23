@@ -1,16 +1,13 @@
 ALBERTA_DIR=/usr/local_machine/alberta-3.0.0; export ALBERTA_DIR
 ZOLTAN_DIR=/usr/local_machine/zoltan-3.8; export ZOLTAN_DIR
-UG_DIR=/usr/local_machine/ug-3.11.0; export UG_DIR
 METIS_DIR=/usr/local_machine/parmetis-4.0.3; export METIS_DIR
 PARMETIS_DIR=/usr/local_machine/parmetis-4.0.3; export PARMETIS_DIR
-PETSC_DIR=/usr/local_machine/petsc-3.5.3; export PETSC_DIR
 SUITESPARSE_DIR=/usr/local_machine/suitesparse-4.4.0; export SUITESPARSE_DIR
 OPENMPI_DIR=/usr/local_machine/openmpi-1.8.4; export OPENMPI_DIR
-GMSH_DIR=/usr/local_machine/gmsh-2.9.3; export GMSH_DIR
-SLEPC_DIR=/usr/local_machine/slepc-3.5.2; export SLEPC_DIR
+GMSH_DIR=/usr/local_machine/gmsh-trunk; export GMSH_DIR
 
 PATH=$OPENMPI_DIR/bin:$GMSH_DIR/bin:/usr/local_machine/bin:$PATH; export PATH
-LD_LIBRARY_PATH=$OPENMPI_DIR/lib:$GMSH_DIR/lib:$PETSC_DIR/lib:$SLEPC_DIR/lib:$LD_LIBRARY_PATH;export LD_LIBRARY_PATH
+LD_LIBRARY_PATH=$OPENMPI_DIR/lib:$GMSH_DIR/lib:$SUITESPARSE_DIR/lib:$LD_LIBRARY_PATH;export LD_LIBRARY_PATH
 DUNE_CONTROL_PATH=$DUNE_DIR:$MYDUNEMODULES_DIR; export DUNE_CONTROL_PATH
 PKG_CONFIG_PATH=$DUNE_DIR:$MYDUNEMODULES_DIR; export PKG_CONFIG_PATH
 CMAKE_PREFIX_PATH=$DUNE_DIR/build; export CMAKE_PREFIX_PATH
