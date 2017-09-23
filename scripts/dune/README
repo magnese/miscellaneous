@@ -24,7 +24,7 @@
 4) Sumbit a job to the cluster:
      in order to compile and run a DUNE code in the cluster run the following commands
 
-     qsubb program_name output_name [node_number](01 default)
+     qsubb program_name [output_name](program_name default) [queue](standard default) [node_number](01 default)
 
      the output will be saved in /scratchcompXX/user_name/output_name/ where XX is the node_number chosen.
 
