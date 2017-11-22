@@ -4,4 +4,4 @@
 # Author: Marco Agnese (m.agnese13@imperial.ac.uk)
 
 rm -rf $DUNE_DIR/build
-$DUNE_DIR/dune-common/bin/dunecontrol --builddir=$DUNE_DIR/build --module=dune-fem --opts=$DUNE_DIR/option.opts all
+$DUNE_DIR/dune-common/bin/dunecontrol --module=dune-fem --opts=$DUNE_DIR/option.opts all
