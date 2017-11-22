@@ -1,14 +1,10 @@
 #! /bin/sh
 
-# Compile DUNE module with a certain given name passed by command line
-# Author: Marco Agnese (m.agnese13@imperial.ac.uk)
-
 if [ $# -eq 0 ]
 then
     echo "Description: compile dune module with a certain given name passed by command line"
-    echo "Usage: compile-dune-module modulename"
-    echo "Author: Marco Agnese (m.agnese13@imperial.ac.uk)"
 else
+    . ./envar
     target=${1%/}
     echo "Compile module $target"
     rm -rf $MYDUNEMODULES_DIR/build/$target
