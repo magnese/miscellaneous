@@ -2,43 +2,12 @@
 
 . ./envar
 
-echo "Pulling $DUNE_DIR/dune-common"
-cd $DUNE_DIR/dune-common
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-grid"
-cd $DUNE_DIR/dune-grid
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-localfunctions"
-cd $DUNE_DIR/dune-localfunctions
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-fem"
-cd $DUNE_DIR/dune-fem
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-geometry"
-cd $DUNE_DIR/dune-geometry
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-istl"
-cd $DUNE_DIR/dune-istl
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-alugrid"
-cd $DUNE_DIR/dune-alugrid
-git remote prune origin
-git pull
-git fetch -p --all
-echo "Pulling $DUNE_DIR/dune-uggrid"
-cd $DUNE_DIR/dune-uggrid
-git remote prune origin
-git pull
-git fetch -p --all
+for i in dune-* ;
+do
+  cd $i
+  echo "Pulling $i"
+  git remote prune origin
+  git pull
+  git fetch -p --all
+  cd ..
+done
