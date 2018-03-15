@@ -38,9 +38,6 @@ int main(int argc,char** argv)
   file<<"#PBS -q "<<queue<<"\n";
   file<<"#PBS -o /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"/"<<output_name<<".out\n";
   file<<"#PBS -e /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"/"<<output_name<<".err\n";
-  file<<"mkdir -p /scratchcomp"<<output_node<<"/"<<user<<"\n";
-  file<<"mkdir -p /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"\n";
-  file<<"cd /scratchcomp"<<output_node<<"/"<<user<<"/"<<output_name<<"\n";
   file<<"export OPENBLAS_NUM_THREADS=1\n";
   file<<pwd<<"/"<<program_name<<"\n";
   file.close();
