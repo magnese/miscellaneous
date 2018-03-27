@@ -1,8 +1,8 @@
-#include <iostream>
+#include <cmath>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <cmath>
 
 // point type
 struct PointType
@@ -18,7 +18,7 @@ struct PointType
 
 std::ostream& operator<<(std::ostream& os, const PointType& point)
 {
-  os<<"Point("<<point.idx<<") = {"<<point.x<<", "<<point.y<<", "<<point.z<<", cli};";
+  return os<<"Point("<<point.idx<<") = {"<<point.x<<", "<<point.y<<", "<<point.z<<", cli};";
 }
 
 // line type
@@ -34,7 +34,7 @@ struct LineType
 
 std::ostream& operator<<(std::ostream& os, const LineType& line)
 {
-  os<<"Line("<<line.idx<<") = {"<<line.idxPoint1<<" ,"<<line.idxPoint2<<"};";
+  return os<<"Line("<<line.idx<<") = {"<<line.idxPoint1<<" ,"<<line.idxPoint2<<"};";
 }
 
 // create geometry

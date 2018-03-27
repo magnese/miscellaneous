@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <tuple>
 
 const std::string Time()
 {
@@ -30,12 +31,12 @@ int main(int argc,char** argv)
   const std::string archiveFullPath("/scratch/"+user+"/backups/"+fileName);
 
   std::string commandMkdir("mkdir -p /scratch/"+user);
-  system(commandMkdir.c_str());
+  std::ignore=system(commandMkdir.c_str());
   commandMkdir+="/backups";
-  system(commandMkdir.c_str());
+  std::ignore=system(commandMkdir.c_str());
 
   const std::string commandArchive("tar cf "+archiveFullPath+" ~/*");
-  system(commandArchive.c_str());
+  std::ignore=system(commandArchive.c_str());
 
   std::cout<<"Your home folder has been backed-up in "<<archiveFullPath<<std::endl<<std::endl;
 
@@ -44,7 +45,7 @@ int main(int argc,char** argv)
     const std::string computerName(argv[1]);
     std::cout<<"Prompt the password of your local machine to start the copy"<<std::endl;
     const std::string commandScp("scp "+archiveFullPath+" "+user+"@"+computerName+".ma.ic.ac.uk:~/backups/"+fileName);
-    system(commandScp.c_str());
+    std::ignore=system(commandScp.c_str());
     std::cout<<"Your home folder has been backed-up in "<<computerName<<".ma.ic.ac.uk:~/backups/"<<fileName<<std::endl<<std::endl;
   }
 

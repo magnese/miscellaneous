@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#include <tuple>
 #include <vector>
 
 template<typename M,typename S=std::ostream>
@@ -42,6 +43,6 @@ int main()
   // dump path
   std::ofstream file("path.dat");
   print(mapping,file);
-  system("./plot.sh");
+  std::ignore=system("./plot.sh");
   return 0;
 }
