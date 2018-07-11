@@ -1,24 +1,7 @@
 set nocompatible
-filetype off
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-
-" let Vundle manage Vundle
-Plugin 'VundleVim/Vundle.vim'
-
-" C++ completition
-Plugin 'Valloric/YouCompleteMe'
-
-call vundle#end()
-filetype plugin indent on
-
-" Brief help
-" :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
-" :PluginSearch foo - searches for foo; append `!` to refresh local cache
-" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
+" auto ident
+filetype indent on
 
 " size of a hard tabstop
 set tabstop=2
@@ -37,3 +20,7 @@ set expandtab
 
 " remove trailing whitespace
 autocmd BufWritePre * :%s/\s\+$//e
+
+" disable bell
+set visualbell
+set t_vb=
